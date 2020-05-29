@@ -1,31 +1,47 @@
 import request from '@/utils/request'
 
-export function login(data) {
+export function register(data) {
   return request({
-    url: '/user/login',
+    url: '/user/register/',
     method: 'post',
     data
   })
 }
 
-export function getInfo(token) {
+export function login(data) {
   return request({
-    url: '/user/info',
-    method: 'get',
-    params: { token }
+    url: '/user/authorization/',
+    method: 'post',
+    data
   })
 }
 
 export function logout() {
+  return Promise.resolve()
+  // return request({
+  //   url: '/user/logout',
+  //   method: 'post'
+  // })
+}
+
+export function getUserInfo() {
   return request({
-    url: '/user/logout',
-    method: 'post'
+    url: '/user/userinfo/',
+    method: 'get'
   })
 }
 
 export function getAllUsers() {
   return request({
-    url: '/user/users',
-    method: 'get',
+    url: '/user/users/',
+    method: 'get'
   })
 }
+
+export function refreshToken() {
+  return request({
+    url: '/user/authorization/',
+    method: 'put'
+  })
+}
+

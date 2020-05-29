@@ -1,11 +1,8 @@
 <template>
   <div class="datasource-list-container">
-    <div class="datasource-tools">
-      <slot name="tableHead" />
-      <div style="float: right">
-        <el-button size="small" plain @click="showFilterDialog">filter</el-button>
-        <AppSearch v-model="form.query" />
-      </div>
+    <div v-if="showSearch" class="datasource-search">
+      <AppSearch v-model="form.query" class="datasource-search-input" />
+      <svg-icon icon-class="filter" class="datasource-search-filter" @click="showFilterDialog" />
     </div>
     <div class="datasource-main">
       <el-table
@@ -17,75 +14,76 @@
         fit
         highlight-current-row
         :height="tableHeight"
+        class="app-list-table"
+        :class="tableClassCombined"
+        @selection-change="handleSelectionChange"
       >
         <el-table-column
           v-if="showSelection"
           type="selection"
           width="55"
         />
-        <el-table-column align="center" label="文件名" >
+        <el-table-column align="center" label="文件名">
           <template slot-scope="scope">
             {{ scope.row.title }}
           </template>
         </el-table-column>
         <el-table-column label="关联接口/流程">
           <template slot-scope="scope">
-            {{ scope.row.author }}
-          </template>
-        </el-table-column>
-        <el-table-column label="项目优先级" width="200" align="center">
-          <template slot-scope="scope">
-            <span>{{ scope.row.title }}</span>
+            {{ scope.row.interfacename }}
           </template>
         </el-table-column>
         <el-table-column label="修改时间" align="center">
           <template slot-scope="scope">
-            {{ scope.row.updated }}
+            {{ scope.row.updated | parseToDate }}
           </template>
         </el-table-column>
         <el-table-column v-if="showOperation" label="操作" width="250" align="center">
-          <template slot-scope="scope">
-            <el-tag
-              type="warning"
+          <div slot-scope="scope" class="operation-button-group">
+            <span
               @click="uploadData(scope.row)"
-            >上传</el-tag>
-            <el-tag
+            >上传</span>
+            <span
               @click="downloadData(scope.row)"
-            >下载</el-tag>
-            <el-tag
-              type="info"
+            >下载</span>
+            <span
               @click="deleteData(scope.row)"
-            >删除</el-tag>
-            <el-tag type="success"
-              @click="bindData(scope.row)">绑定</el-tag>
-          </template>
+            >删除</span>
+            <span
+              type="success"
+              @click="bindData(scope.row)"
+            >绑定</span>
+          </div>
         </el-table-column>
       </el-table>
       <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getDatasourceList" />
-      
+
       <FilterDialog
         :visible.sync="filterDialogVisible"
         :default-data="filterForm"
         @selected="handleFilterSelected"
       />
-    <el-dialog
-      title="选择绑定接口"
-      :visible="interfaceVisible"
-      :before-close="_ => interfaceVisible = false"
-      append-to-body
-      
-      width="80%"
-    >
-      <InterfaceList ref="interfaceList" table-height="calc(100vh - 300px)"
-        :show-operation="false"
-        show-selection
-        singleSelect
-      />
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="interfaceVisible = false">取 消</el-button>
-        <el-button type="primary" @click="handleConfirmChoose">确 定</el-button>
-      </span>
-    </el-dialog>
+      <el-dialog
+        v-if="showOperation"
+        title="选择绑定接口"
+        :visible="interfaceVisible"
+        :before-close="_ => interfaceVisible = false"
+        append-to-body
+        width="80%"
+      >
+        <InterfaceList
+          ref="interfaceList"
+          table-height="calc(100vh - 25vw)"
+          :show-operation="false"
+          show-selection
+          single-select
+          table-class="app-list-table"
+        />
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="interfaceVisible = false">取 消</el-button>
+          <el-button type="primary" @click="handleConfirmChoose">确 定</el-button>
+        </span>
+      </el-dialog>
     </div>
   </div>
 </template>
@@ -94,15 +92,15 @@
 import AppSearch from '@/components/AppSearch'
 import Pagination from '@/components/Pagination'
 import FilterDialog from './filterDialog'
-import InterfaceList from '@/views/interface/interfaceList'
-import { getDatasourceList, updateDatasource } from '@/api/datasource'
+import { getDatasourceList, updateDatasource, deleteDatasource } from '@/api/datasource'
 
 export default {
+  name: 'DatasourceList',
   components: {
     AppSearch,
     Pagination,
     FilterDialog,
-    InterfaceList
+    InterfaceList: () => import('@/views/interface/interfaceList')
   },
   props: {
     appendParams: {
@@ -112,7 +110,12 @@ export default {
       }
     },
     tableHeight: {
-      type: String
+      type: String,
+      default: 'auto'
+    },
+    tableClass: {
+      type: [String, Array],
+      default: ''
     },
     showSelection: {
       type: Boolean,
@@ -120,14 +123,17 @@ export default {
     },
     showSearch: {
       type: Boolean,
-      default: true
+      default: false
     },
     showOperation: {
       type: Boolean,
       default: true
+    },
+    singleSelect: {
+      type: Boolean,
+      default: false
     }
   },
-
   data() {
     return {
       form: {
@@ -148,17 +154,23 @@ export default {
       interfaceVisible: false
     }
   },
-
-  watch: {
-    appendParams() {
-      this.getDatasourceList()
+  computed: {
+    tableClassCombined() {
+      let classes
+      if (typeof this.tableClass === 'string') {
+        classes = [this.tableClass]
+      } else {
+        classes = this.tableClass
+      }
+      return [
+        ...classes,
+        this.singleSelect ? 'app-single-select-table' : ''
+      ]
     }
   },
-
   created() {
     this.getDatasourceList()
   },
-
   methods: {
     getDatasourceList() {
       this.listLoading = true
@@ -185,8 +197,21 @@ export default {
       this.$emit('editDatasource', datasource)
     },
     downloadData(datasource) {
+      window.open(datasource.file_name)
     },
     deleteData(datasource) {
+      this.$confirm('将删除数据源, 是否继续?', '提示').then(_ => {
+        const ids = [datasource.id]
+        deleteDatasource({
+          ids
+        }).then(_ => {
+          this.$message({
+            type: 'success',
+            message: '删除成功'
+          })
+          this.getDatasourceList()
+        }).catch(_ => {})
+      })
     },
     bindData(datasource) {
       this.interfaceVisible = true
@@ -194,7 +219,6 @@ export default {
     },
     handleConfirmChoose() {
       const selection = this.$refs.interfaceList.getSelection()
-      console.log(selection)
       const interfaceId = selection[0].id
 
       updateDatasource({
@@ -207,7 +231,18 @@ export default {
           type: 'success',
           message: '绑定成功'
         })
+        this.$refs.interfaceList.clearSelection()
       })
+    },
+    handleSelectionChange(selection) {
+      if (this.singleSelect) {
+        if (selection.length > 1) {
+          const lastRow = selection.pop()
+          this.$refs.datasourceList.clearSelection()
+          this.$refs.datasourceList.toggleRowSelection(lastRow, true)
+        }
+      }
+      this.$emit('selection-change', selection)
     }
   }
 }
@@ -217,13 +252,45 @@ export default {
 $colorGray: #DCDFE6;
 
 .datasource-list-container {
-  width: 100%;
-  height: 100%;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  .datasource-search {
+    padding: 10px 20px 19px 20px;
+    background: #F2F2F2;
+    white-space: nowrap;
+    &-input {
+      width: 1000px;
+    }
+    &-filter {
+      font-size: 20px;
+      margin-left: 30px;
+      stroke:#333;
+      transition: all .3s;
+      &:hover {
+        stroke: #0090DA;
+      }
+    }
+  }
 
   .datasource-tools {
     min-height: 50px;
-    padding: 10px 5px;
-    border: 1px solid $colorGray;
+    padding: 10px 15px;
+  }
+
+  .datasource-main {
+    .title {
+      font-size: 20px;
+    }
+
+    .operation-button-group {
+      > span {
+        font-size: 14px;
+        color: #0090DA;
+        margin: 10px;
+        cursor: pointer;
+      }
+    }
   }
 }
 </style>

@@ -22,11 +22,12 @@ import 'codemirror/addon/hint/html-hint'
 import 'codemirror/addon/display/autorefresh.js'
 
 export default {
-  name: 'codeEditor',
+  name: 'CodeEditor',
   /* eslint-disable vue/require-prop-types */
   props: {
     value: {
       type: [Object, String],
+      default: ''
     },
     mode: {
       type: String,
@@ -38,23 +39,44 @@ export default {
       codeEditor: false
     }
   },
+  watch: {
+    value(value) {
+      if (this.mode === 'application/json') {
+        return
+      }
+      const editorValue = this.codeEditor.getValue()
+      if (value !== editorValue) {
+        this.codeEditor.setValue(this.value)
+      }
+    }
+  },
   mounted() {
     this.codeEditor = CodeMirror.fromTextArea(this.$refs.textarea, {
       lineNumbers: true,
       mode: this.mode,
       gutters: ['CodeMirror-lint-markers'],
-      theme: 'rubyblue',
       lint: true,
       autoRefresh: true
     })
 
-    if (this.type === 'application/json') {
+    if (this.mode === 'application/json') {
       this.codeEditor.setValue(JSON.stringify(this.value, null, 2))
+    } else {
+      this.codeEditor.setValue(this.value)
     }
 
     this.codeEditor.on('change', cm => {
       this.$emit('changed', cm.getValue())
-      this.$emit('input', cm.getValue())
+      if (this.mode === 'application/json') {
+        try {
+          const value = JSON.parse(cm.getValue())
+          this.$emit('input', value)
+        } catch (e) {
+          this.$emit('input', null)
+        }
+      } else {
+        this.$emit('input', cm.getValue())
+      }
     })
   },
   methods: {
@@ -76,7 +98,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .json-editor{
   height: 100%;
   position: relative;
@@ -87,6 +109,11 @@ export default {
 }
 .json-editor >>> .CodeMirror-scroll{
   min-height: 386px;
+  background: #F1F5F8;
+
+  .CodeMirror-gutters {
+    border-right: 1px solid #ddd;
+  }
 }
 .json-editor >>> .cm-s-rubyblue span.cm-string {
   color: #F08047;

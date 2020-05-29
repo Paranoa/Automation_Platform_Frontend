@@ -27,6 +27,7 @@
 
     .scrollbar-wrapper {
       overflow-x: hidden !important;
+      background-image: linear-gradient(180deg, rgba(19,79,130,0.90) 0%, #114478 60%, #0C3455 100%);
     }
 
     .el-scrollbar__bar.is-vertical {
@@ -61,13 +62,38 @@
       border: none;
       height: 100%;
       width: 100% !important;
+      .el-menu-item {
+        font-size: 18px;
+        font-weight: bold;
+        padding-left: 70px !important;
+        height: 80px;
+        line-height: 80px;
+        &:hover {
+          background: #0471AC !important;
+        }
+        &.is-active {
+          background-color: #fff !important;
+          position: relative;
+          &:after {
+            display: table;
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 10px;
+            height: 100%;
+            background: #264D73;
+          }
+        }
+      }
     }
 
     // menu hover
     .submenu-title-noDropdown,
     .el-submenu__title {
       &:hover {
-        background-color: $menuHover !important;
+        // background-color: $menuHover !important;
+        // color: $menuHoverText !important;
       }
     }
 
@@ -82,6 +108,7 @@
 
       &:hover {
         background-color: $subMenuHover !important;
+        color: $subMenuHoverText !important;
       }
     }
   }
@@ -184,7 +211,8 @@
   .el-menu-item {
     &:hover {
       // you can use $subMenuHover
-      background-color: $menuHover !important;
+      // background-color: $menuHover !important;
+      color: $subMenuHoverText !important;
     }
   }
 

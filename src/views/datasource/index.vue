@@ -1,69 +1,111 @@
 <template>
-  <div class="datasource-container">
-    <DatasourceList table-height="calc(100vh - 200px)" show-selection
-      ref="datasourceList"
-      :appendParams="appendParams"
-      @editDatasource="editDatasource">
-      <template slot="tableHead">
-        <el-select size="mini" v-model="projectId" style="margin-top: 5px">
-          <el-option v-for="project of $store.getters.allProjects"
-            :key="project.id" :label="project.name" :value="project.id" />
+  <div>
+    <Navbar />
+    <div class="datasource-container">
+      <div class="datasource-search">
+        <AppSearch v-model="form.name" class="datasource-search-input" @query="refreshDatasourceList" />
+        <!-- <svg-icon icon-class="filter" class="datasource-search-filter" @click="showFilterDialog" /> -->
+        <el-select v-model="projectId" size="mini" class="datasource-search-project">
+          <el-option
+            v-for="project of $store.getters.allProjects"
+            :key="project.id"
+            :label="project.name"
+            :value="project.id"
+          />
         </el-select>
-        <el-button size="small" plain @click="addDataVisible = true">新建</el-button>
-        <el-button size="small" plain>复制</el-button>
-        <el-button size="small" plain
-          @click="deleteDatasources">删除</el-button>
-      </template>
-    </DatasourceList>
-    <el-dialog
-      title="title"
-      :visible="addDataVisible"
-      width="40%"
-      :before-close="handleCancel">
-      <el-form>
-        <el-form-item label="数据源文件名" label-width="100px">
-          <el-input v-model="addForm.fileName" />
-        </el-form-item>
-      </el-form>
-      <FileUpload ref="uploadDatasource" v-model="addForm.datasourceFile"
-        name="file_name"
-        :action="`${baseUrl}/datasource/sources/`"
-        :data="{ title: addForm.fileName, project: projectId }"
-        :on-success="handleUploadSuccess"/>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="handleCancel">取 消</el-button>
-        <el-button type="primary" @click="handleAddConfirm">确 定</el-button>
-      </span>
-    </el-dialog>
-    <el-dialog
-      title="title"
-      :visible="editDataVisible"
-      width="40%">
-      <el-form>
-        <el-form-item label="数据源文件名" label-width="100px">
-          <el-input v-model="editForm.fileName" />
-        </el-form-item>
-      </el-form>
-      <FileUpload ref="uploadDatasource2" v-model="editForm.datasourceFile"
-        name="file_name"
-        v-if="editForm.datasource"
-        :action="`${baseUrl}/datasource/sources/${editForm.datasource.id}/`"
-        :http-request="uploadAction"
-        :data="{ title: editForm.fileName }"/>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="editDataVisible = false">取 消</el-button>
-        <el-button type="primary" @click="handleEditConfirm">确 定</el-button>
-      </span>
-    </el-dialog>
+      </div>
+      <div class="button-group">
+        <el-button
+          size="small"
+          plain
+          class="app-el-btn-primary"
+          @click="addDataVisible = true"
+        >新建
+        </el-button>
+        <el-button
+          size="small"
+          plain
+          class="app-el-btn-primary"
+        >复制
+        </el-button>
+        <el-button
+          size="small"
+          plain
+          class="app-el-btn-primary"
+        >删除
+        </el-button>
+      </div>
+      <DatasourceList
+        ref="datasourceList"
+        class="datasource-main"
+        table-height="calc(100vh - 19.2vw)"
+        show-selection
+        :append-params="appendParams"
+        @editDatasource="editDatasource"
+      />
+      <el-dialog
+        title="上传数据源"
+        :visible="addDataVisible"
+        width="40%"
+        :before-close="handleCancel"
+      >
+        <el-form>
+          <el-form-item label="数据源文件名" label-width="100px">
+            <el-input v-model="addForm.fileName" />
+          </el-form-item>
+        </el-form>
+        <FileUpload
+          ref="uploadDatasource"
+          v-model="addForm.datasourceFile"
+          name="file_name"
+          :action="`${baseUrl}/datasource/sources/`"
+          :data="{ title: addForm.fileName, project: projectId }"
+          :on-success="handleUploadSuccess"
+        />
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="handleCancel">取 消</el-button>
+          <el-button type="primary" @click="handleAddConfirm">确 定</el-button>
+        </span>
+      </el-dialog>
+      <el-dialog
+        title="上传数据源"
+        :visible="editDataVisible"
+        width="40%"
+      >
+        <el-form>
+          <el-form-item label="数据源文件名" label-width="100px">
+            <el-input v-model="editForm.fileName" />
+          </el-form-item>
+        </el-form>
+        <FileUpload
+          v-if="editForm.datasource"
+          ref="uploadDatasource2"
+          v-model="editForm.datasourceFile"
+          name="file_name"
+          :action="`${baseUrl}/datasource/sources/${editForm.datasource.id}/`"
+          :http-request="uploadAction"
+          :data="{ title: editForm.fileName }"
+        />
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="editDataVisible = false">取 消</el-button>
+          <el-button type="primary" @click="handleEditConfirm">确 定</el-button>
+        </span>
+      </el-dialog>
+      <FilterDialog v-if="false" :visible.sync="filterDialogVisible" />
+    </div>
   </div>
 </template>
 
 <script>
 
+import { Navbar } from '@/layout/components'
 import DatasourceList from './datasourceList'
-import FileUpload from '@/components/FileUpload';
+import FileUpload from '@/components/FileUpload'
 import axios from 'axios'
 import { deleteDatasource } from '@/api/datasource'
+import { getToken } from '@/utils/auth'
+import AppSearch from '@/components/AppSearch'
+import FilterDialog from './datasourceList/filterDialog'
 
 const baseUrl = process.env.VUE_APP_BASE_API
 
@@ -71,34 +113,72 @@ export default {
   name: 'Datasource',
   components: {
     DatasourceList,
-    FileUpload
+    FileUpload,
+    Navbar,
+    AppSearch,
+    FilterDialog
   },
   data() {
+    let projectId = ''
+    if (this.$store.getters.allProjects) {
+      // 如果有已选中的项目则选中 否则选中第一条
+      if (this.$store.getters.selectedProjectId) {
+        projectId = this.$store.getters.selectedProjectId
+      } else if (this.$store.getters.allProjects.length) {
+        projectId = this.$store.getters.allProjects[0].id
+      }
+    }
     return {
       form: {
-        query: ''
+        name: ''
       },
       baseUrl,
-      projectId: '',
+      projectId,
       addForm: {
         fileName: '',
-        datasourceFile: [],
+        datasourceFile: []
       },
       editForm: {
         datasource: null,
         fileName: '',
-        datasourceFile: [],
+        datasourceFile: []
       },
       addDataVisible: false,
-      editDataVisible: false
+      editDataVisible: false,
+      filterDialogVisible: false
     }
   },
   computed: {
     appendParams() {
-      return this.projectId? { project: this.projectId } : {}
+      return {
+        project: this.projectId,
+        name: this.form.name
+      }
     }
   },
+  watch: {
+    projectId: {
+      handler(value, oldval) {
+        this.$store.dispatch('user/setSelectedProjectId', value)
+        this.$nextTick(_ => {
+          this.refreshDatasourceList()
+        })
+      }
+    }
+  },
+  activated() {
+    if (this.needsRefresh) {
+      this.refreshDatasourceList()
+      this.refreshSelectedProject()
+    }
+  },
+  deactivated() {
+    this.needsRefresh = true
+  },
   methods: {
+    showFilterDialog() {
+      this.filterDialogVisible = true
+    },
     handleUploadSuccess() {
       this.addDataVisible = false
       this.$message({
@@ -114,10 +194,24 @@ export default {
       if (!(this.addForm.fileName && this.projectId)) {
         return
       }
+      if (!this.$refs.uploadDatasource.fileList.length) {
+        this.$message({
+          message: '请上传文件',
+          type: 'error'
+        })
+        return
+      }
       this.$refs.uploadDatasource.submit()
     },
     handleEditConfirm() {
       if (!this.editForm.fileName) {
+        return
+      }
+      if (!this.$refs.uploadDatasource2.fileList.length) {
+        this.$message({
+          message: '请上传文件',
+          type: 'error'
+        })
         return
       }
       this.$refs.uploadDatasource2.submit()
@@ -137,17 +231,25 @@ export default {
 
       const config = {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          AUTHORIZATION: getToken()
         }
       }
 
-      axios.put(action, formData, config).then(_ => {
-        this.editDataVisible = false
-        this.$message({
-          type: 'success',
-          message: '上传成功'
-        })
-        this.refreshDatasourceList()
+      axios.put(action, formData, config).then(({ data }) => {
+        if (data.code === 200) {
+          this.editDataVisible = false
+          this.$message({
+            type: 'success',
+            message: '上传成功'
+          })
+          this.refreshDatasourceList()
+        } else {
+          this.$message({
+            type: 'error',
+            message: data.message
+          })
+        }
       })
     },
     deleteDatasources() {
@@ -166,22 +268,70 @@ export default {
           })
           this.refreshDatasourceList()
         })
-      })
+      }).catch(_ => {})
     },
     refreshDatasourceList() {
       this.$refs.datasourceList.getDatasourceList()
+    },
+    refreshSelectedProject() {
+      if (this.$store.getters.selectedProjectId) {
+        this.projectId = this.$store.getters.selectedProjectId
+      }
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+@import '@/styles/variables.scss';
 
 .datasource-container {
+  min-height: calc(100vh - 70px);
   display: flex;
   flex-direction: column;
   position: absolute;
-  top: 0; bottom: 0; left: 0; right: 0;
-  padding: 10px;
+  top: $navBarHeight; bottom: 0; left: 0; right: 0;
+
+  .datasource-search {
+    padding: 10px 20px 19px 20px;
+    background: #F2F2F2;
+    white-space: nowrap;
+    font-size: 0;
+    &-input {
+      width: 1000px;
+    }
+    &-filter {
+      font-size: 20px;
+      margin-left: 30px;
+      cursor: pointer;
+      stroke:#333;
+      transition: all .3s;
+      &:hover {
+        stroke: #0090DA;
+      }
+    }
+    &-project {
+      float: right;
+      >>> .el-input__inner {
+        height: 50px;
+        line-height: 50px;
+      }
+    }
+  }
+  .datasource-main {
+    border: 10px solid #D9D9D7;
+    padding: 20px 20px 0;
+    flex-grow: 1;
+  }
+  .button-group {
+    padding: 15px 25px;
+    background-image: linear-gradient(90deg, #3878A6 0%, #0471AC 30%, #114478 100%);
+    font-size: 0;
+
+    >>> .el-button{
+      width: 120px;
+      height: 50px;
+    }
+  }
 }
 </style>

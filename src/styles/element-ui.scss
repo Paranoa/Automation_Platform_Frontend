@@ -47,3 +47,13 @@
 .el-range-separator {
   box-sizing: content-box;
 }
+
+// to overwrite el default style
+.el-form-item.is-success .el-input__inner, .el-form-item.is-success .el-input__inner:focus, .el-form-item.is-success .el-textarea__inner, .el-form-item.is-success .el-textarea__inner:focus {
+  border-color: #DCDFE6
+}
+
+.el-form-item__label {
+  font-weight: normal;
+  color: #000;
+}

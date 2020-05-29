@@ -1,19 +1,20 @@
 <template>
   <div class="project-list-container">
+    <div class="project-search">
+      <AppSearch v-model="filterForm.name" class="project-search-input" @query="handleFilterConfirmed" />
+      <svg-icon icon-class="filter" class="project-search-filter" @click="showFilterDialog" />
+    </div>
     <div class="project-tools">
       <slot name="tableHead" />
-      <div style="float: right">
-        <el-button size="small" plain @click="showFilterDialog">filter</el-button>
-        <AppSearch v-model="form.query" />
-      </div>
     </div>
     <div class="project-main">
+      <div class="title">项目列表</div>
       <el-table
         ref="projectList"
         v-loading="listLoading"
+        class="app-list-table"
         :data="list"
         element-loading-text="Loading"
-        border
         fit
         highlight-current-row
         :height="tableHeight"
@@ -50,18 +51,12 @@
         </el-table-column>
         <el-table-column v-if="showOperation" label="操作" width="250" align="center">
           <template slot-scope="scope">
-            <el-tag
-              type="warning"
-              @click="editProject(scope.row)"
-            >编辑</el-tag>
-            <el-tag
-              @click="enviromentManage(scope.row)"
-            >环境</el-tag>
-            <el-tag
-              type="info"
-              @click="userManage(scope.row)"
-            >人员</el-tag>
-            <el-tag type="success">导出</el-tag>
+            <div class="operation-button-group">
+              <span @click="editTemplate(scope.row)">模板</span>
+              <span @click="editProject(scope.row)">编辑</span>
+              <span @click="enviromentManage(scope.row)">环境</span>
+              <span @click="userManage(scope.row)">人员</span>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -71,13 +66,6 @@
         :visible.sync="filterDialogVisible"
         :default-data="filterForm"
         @selected="handleFilterSelected"
-      />
-
-      <AddProject
-        v-if="selectedProject"
-        :project="selectedProject"
-        :visible.sync="editProjectVisible"
-        @finished="getProjectList"
       />
 
       <EnvironmentManage
@@ -101,7 +89,6 @@ import AppSearch from '@/components/AppSearch'
 import Pagination from '@/components/Pagination'
 import FilterDialog from './filterDialog'
 
-const AddProject = () => import('../addProject')
 const EnvironmentManage = () => import('./environmentManage')
 const UserManage = () => import('./userManage')
 
@@ -110,13 +97,13 @@ export default {
     AppSearch,
     Pagination,
     FilterDialog,
-    AddProject,
     EnvironmentManage,
     UserManage
   },
   props: {
     tableHeight: {
-      type: String
+      type: String,
+      default: 'auto'
     },
     showSelection: {
       type: Boolean,
@@ -133,9 +120,6 @@ export default {
   },
   data() {
     return {
-      form: {
-        query: ''
-      },
       list: null,
       total: 0,
       listLoading: true,
@@ -145,12 +129,22 @@ export default {
       },
       filterDialogVisible: false,
       filterForm: {
-        name: 'zw'
+        level: null,
+        status: null
+      },
+      filterFormConfirmed: {
       },
       selectedProject: false,
-      editProjectVisible: false,
       environmentManageVisible: false,
       userManageVisible: false
+    }
+  },
+
+  computed: {
+    appendParams() {
+      return {
+        ...this.filterFormConfirmed
+      }
     }
   },
 
@@ -163,33 +157,66 @@ export default {
       this.listLoading = true
       getProjectList({
         page: this.listQuery.page,
-        page_size: this.listQuery.limit
+        page_size: this.listQuery.limit,
+        ...this.appendParams
       }).then(response => {
         this.list = response.data.results
         this.total = response.data.count
         this.listLoading = false
       })
     },
+    refreshProjectList() {
+      this.listQuery.page = 1
+      this.getProjectList()
+    },
     showFilterDialog() {
       this.filterDialogVisible = true
     },
     handleFilterSelected(form) {
-      this.filterForm = form
+      this.filterForm = {
+        ...this.filterForm,
+        ...form
+      }
+      this.confirmFilterForm()
+      this.$nextTick(_ => this.refreshProjectList())
+    },
+    editTemplate(project) {
+      this.$router.push({
+        name: 'projectTemplateEdit',
+        params: { id: project.id }
+      })
     },
     editProject(project) {
-      this.selectedProject = project
-      this.editProjectVisible = true
+      this.$router.push({
+        name: 'projectEdit',
+        params: { project }
+      })
     },
     enviromentManage(project) {
-      this.selectedProject = project
-      this.environmentManageVisible = true
+      this.$router.push({
+        name: 'projectEnv',
+        params: { id: project.id }
+      })
     },
     userManage(project) {
+      this.$router.push({
+        name: 'projectUsers',
+        params: { project }
+      })
       this.selectedProject = project
       this.userManageVisible = true
     },
     getSelection() {
       return this.$refs.projectList.selection
+    },
+    handleFilterConfirmed() {
+      this.confirmFilterForm()
+      this.$nextTick(_ => this.refreshProjectList())
+    },
+    confirmFilterForm() {
+      this.filterFormConfirmed = {
+        ...this.filterForm
+      }
     }
   }
 }
@@ -201,11 +228,51 @@ $colorGray: #DCDFE6;
 .project-list-container {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  .project-search {
+    padding: 10px 20px 19px 20px;
+    background: #F2F2F2;
+    white-space: nowrap;
+    font-size: 0;
+    &-input {
+      width: 1000px;
+    }
+    &-filter {
+      font-size: 20px;
+      margin-left: 30px;
+      cursor: pointer;
+      stroke:#333;
+      transition: all .3s;
+      &:hover {
+        stroke: #0090DA;
+      }
+    }
+  }
 
-  .project-tools {
-    min-height: 50px;
-    padding: 10px 5px;
-    border: 1px solid $colorGray;
+  .project-main {
+    background: #f7f9fc;
+    border: 10px solid #D9D9D7;
+    padding: 20px 20px 0;
+    flex-grow: 1;
+    .title {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    .operation-button-group {
+      > span {
+        font-size: 14px;
+        color: #0090DA;
+        margin: 10px;
+        cursor: pointer;
+      }
+    }
+  }
+
+  >>> .el-table__header-wrapper, >>> .el-table__body-wrapper {
+    > table, .el-table__empty-block {
+      width: auto !important;
+    }
   }
 }
 </style>

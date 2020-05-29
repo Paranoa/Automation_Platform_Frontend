@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
+import store from '@/store'
 
 Vue.use(Router)
 
@@ -38,6 +39,12 @@ export const constantRoutes = [
   },
 
   {
+    path: '/register',
+    component: () => import('@/views/register'),
+    hidden: true
+  },
+
+  {
     path: '/404',
     component: () => import('@/views/404'),
     hidden: true
@@ -57,7 +64,60 @@ export const constantRoutes = [
         path: 'index',
         name: 'Project',
         component: () => import('@/views/project/index'),
-        meta: { title: '项目管理', icon: 'form' }
+        meta: { title: '项目管理' }
+      },
+      {
+        path: 'add',
+        name: 'projectAdd',
+        component: () => import('@/views/project/addProject'),
+        meta: { title: '新建项目', activeMenu: '/project/index' },
+        hidden: true
+      },
+      {
+        path: 'edit',
+        name: 'projectEdit',
+        component: () => import('@/views/project/addProject'),
+        meta: { title: '编辑项目', activeMenu: '/project/index' },
+        hidden: true,
+        beforeEnter: (to, from, next) => {
+          if (to.params.project) {
+            next()
+          } else {
+            next({
+              name: 'Project'
+            })
+          }
+        }
+      },
+      {
+        path: 'envs/:id',
+        name: 'projectEnv',
+        component: () => import('@/views/project/projectList/environmentManage'),
+        meta: { title: '环境管理', activeMenu: '/project/index' },
+        hidden: true
+      },
+      {
+        path: 'users',
+        name: 'projectUsers',
+        component: () => import('@/views/project/projectList/userManage.vue'),
+        meta: { title: '人员管理', activeMenu: '/project/index' },
+        hidden: true,
+        beforeEnter: (to, from, next) => {
+          if (to.params.project) {
+            next()
+          } else {
+            next({
+              name: 'Project'
+            })
+          }
+        }
+      },
+      {
+        path: 'tamplate/:id',
+        name: 'projectTemplateEdit',
+        component: () => import('@/views/project/projectList/templateManage'),
+        meta: { title: '项目环境模板', activeMenu: '/project/index' },
+        hidden: true
       }
     ]
   },
@@ -69,7 +129,80 @@ export const constantRoutes = [
         path: 'index',
         name: 'Interface',
         component: () => import('@/views/interface/index'),
-        meta: { title: '接口管理', icon: 'form' }
+        meta: { title: '接口管理' }
+      },
+      {
+        path: 'add/:projectId/:moduleId',
+        name: 'InterfaceAdd',
+        component: () => import('@/views/interface/addInterface/'),
+        meta: { title: '新建接口', activeMenu: '/interface/index' },
+        hidden: true
+      },
+      {
+        path: 'edit/interface/:projectId/:interfaceId',
+        name: 'InterfaceEdit',
+        component: () => import('@/views/interface/addInterface/'),
+        meta: { title: '编辑接口', activeMenu: '/interface/index' },
+        hidden: true,
+        beforeEnter: (to, from, next) => {
+          const name = from.name || store.getters.lastInterfacePageState
+          // 在本地记录最后一次进入接口详情 是从"接口模块"还是"执行模块" 决定左侧菜单选中
+          store.dispatch('app/setLastInterfacePageState', name)
+          if (name === 'Execution') {
+            to.meta.activeMenu = '/execution/index'
+          } else {
+            to.meta.activeMenu = '/interface/index'
+          }
+          next()
+        }
+      },
+      {
+        path: 'addBusiness/:projectId/:moduleId',
+        name: 'BusinessAdd',
+        component: () => import('@/views/interface/addBusinessFlow/'),
+        meta: { title: '新建流程', activeMenu: '/interface/index' },
+        hidden: true
+      },
+      {
+        path: 'edit/business/:projectId/:interfaceId',
+        name: 'BusinessEdit',
+        component: () => import('@/views/interface/addBusinessFlow/'),
+        meta: { title: '编辑流程', activeMenu: '/interface/index' },
+        hidden: true,
+        beforeEnter: (to, from, next) => {
+          const name = from.name || store.getters.lastInterfacePageState
+          // 在本地记录最后一次进入接口详情 是从"接口模块"还是"执行模块" 决定左侧菜单选中
+          store.dispatch('app/setLastInterfacePageState', name)
+          if (name === 'Execution') {
+            to.meta.activeMenu = '/execution/index'
+          } else {
+            to.meta.activeMenu = '/interface/index'
+          }
+          next()
+        }
+      },
+      {
+        path: 'excute',
+        name: 'InterfaceExcute',
+        component: () => import('@/views/interface/interfaceList/runInterface'),
+        meta: { title: '运行-环境选择', activeMenu: '/interface/index' },
+        hidden: true,
+        beforeEnter: (to, from, next) => {
+          if (to.params.interfaceObj) {
+            next()
+          } else {
+            next({
+              name: 'Interface'
+            })
+          }
+        }
+      },
+      {
+        path: 'excuteResult/:id',
+        name: 'InterfaceExcuteResult',
+        component: () => import('@/views/interface/interfaceList/excutionResult'),
+        meta: { title: '测试结果-单接口', activeMenu: '/interface/index' },
+        hidden: true
       }
     ]
   },
@@ -81,7 +214,7 @@ export const constantRoutes = [
         path: 'index',
         name: 'Datasource',
         component: () => import('@/views/datasource/index'),
-        meta: { title: '数据源', icon: 'form' }
+        meta: { title: '数据源' }
       }
     ]
   },
@@ -93,137 +226,10 @@ export const constantRoutes = [
         path: 'index',
         name: 'Execution',
         component: () => import('@/views/execution/index'),
-        meta: { title: '测试执行', icon: 'form' }
+        meta: { title: '测试执行' }
       }
     ]
   },
-  {
-    path: '/other',
-    component: Layout,
-    children: [
-      {
-        path: 'index',
-        name: 'Other',
-        component: () => import('@/views/other/index'),
-        meta: { title: '其他', icon: 'form' }
-      }
-    ]
-  },
-  // {
-  //     path: '/form',
-  //     component: Layout,
-  //     children: [
-  //       {
-  //         path: 'index',
-  //         name: 'Form',
-  //         component: () => import('@/views/form/index'),
-  //         meta: { title: 'Form', icon: 'form' }
-  //       }
-  //     ]
-  //   },
-  // {
-  //   path: '/example',
-  //   component: Layout,
-  //   redirect: '/example/table',
-  //   name: 'Example',
-  //   meta: { title: 'Example', icon: 'example' },
-  //   children: [
-  //     {
-  //       path: 'table',
-  //       name: 'Table',
-  //       component: () => import('@/views/table/index'),
-  //       meta: { title: 'Table', icon: 'table' }
-  //     },
-  //     {
-  //       path: 'tree',
-  //       name: 'Tree',
-  //       component: () => import('@/views/tree/index'),
-  //       meta: { title: 'Tree', icon: 'tree' }
-  //     }
-  //   ]
-  // },
-
-  // {
-  //   path: '/form',
-  //   component: Layout,
-  //   children: [
-  //     {
-  //       path: 'index',
-  //       name: 'Form',
-  //       component: () => import('@/views/form/index'),
-  //       meta: { title: 'Form', icon: 'form' }
-  //     }
-  //   ]
-  // },
-
-  // {
-  //   path: '/nested',
-  //   component: Layout,
-  //   redirect: '/nested/menu1',
-  //   name: 'Nested',
-  //   meta: {
-  //     title: 'Nested',
-  //     icon: 'nested'
-  //   },
-  //   children: [
-  //     {
-  //       path: 'menu1',
-  //       component: () => import('@/views/nested/menu1/index'), // Parent router-view
-  //       name: 'Menu1',
-  //       meta: { title: 'Menu1' },
-  //       children: [
-  //         {
-  //           path: 'menu1-1',
-  //           component: () => import('@/views/nested/menu1/menu1-1'),
-  //           name: 'Menu1-1',
-  //           meta: { title: 'Menu1-1' }
-  //         },
-  //         {
-  //           path: 'menu1-2',
-  //           component: () => import('@/views/nested/menu1/menu1-2'),
-  //           name: 'Menu1-2',
-  //           meta: { title: 'Menu1-2' },
-  //           children: [
-  //             {
-  //               path: 'menu1-2-1',
-  //               component: () => import('@/views/nested/menu1/menu1-2/menu1-2-1'),
-  //               name: 'Menu1-2-1',
-  //               meta: { title: 'Menu1-2-1' }
-  //             },
-  //             {
-  //               path: 'menu1-2-2',
-  //               component: () => import('@/views/nested/menu1/menu1-2/menu1-2-2'),
-  //               name: 'Menu1-2-2',
-  //               meta: { title: 'Menu1-2-2' }
-  //             }
-  //           ]
-  //         },
-  //         {
-  //           path: 'menu1-3',
-  //           component: () => import('@/views/nested/menu1/menu1-3'),
-  //           name: 'Menu1-3',
-  //           meta: { title: 'Menu1-3' }
-  //         }
-  //       ]
-  //     },
-  //     {
-  //       path: 'menu2',
-  //       component: () => import('@/views/nested/menu2/index'),
-  //       meta: { title: 'menu2' }
-  //     }
-  //   ]
-  // },
-
-  // {
-  //   path: 'external-link',
-  //   component: Layout,
-  //   children: [
-  //     {
-  //       path: 'https://panjiachen.github.io/vue-element-admin-site/#/',
-  //       meta: { title: 'External Link', icon: 'link' }
-  //     }
-  //   ]
-  // },
 
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }

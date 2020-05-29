@@ -6,11 +6,6 @@
 
 <script>
 export default {
-  name: 'App',
-  created() {
-     // TODO move this dispatch to login
-    this.$store.dispatch('user/getAllUsers')
-    this.$store.dispatch('project/getAllProjects')
-  }
+  name: 'App'
 }
 </script>

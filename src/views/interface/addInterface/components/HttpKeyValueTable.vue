@@ -14,8 +14,8 @@
       <el-row class="table-head">
         <el-col :span="4">Key</el-col>
         <el-col :span="8">变量名</el-col>
-        <el-col :span="8">变量描述</el-col>
-        <el-col :span="4">
+        <el-col :span="12">
+          变量描述
           <el-button
             v-if="type==='query'"
             type="primary"
@@ -78,8 +78,12 @@ export default {
       // 不做paramsString和keyValueList的双向绑定,而是按钮切换更新
       if (this.isShowParamsString) {
         const getParamListFromString = (str) => str.split('&').map(s => {
-          const r = s.split('=')
-          return { key: r[0], value: r[1], desc: this.descMap[r[0]] }
+          const [key, value] = s.split('=')
+          return {
+            key,
+            value,
+            desc: this.descMap[key]
+          }
         })
         this.isShowParamsString = false
         this.$emit('update:keyValueList', getParamListFromString(this.paramsString))
@@ -105,12 +109,12 @@ export default {
 <style lang="scss" scoped>
 .http-table-container {
   .table-head {
-    background: #304156;
-    color: #fff;
+    background: #eff0ef;
+    color: #000;
+    font-weight: bold;
     line-height: 35px;
-    margin-bottom: 5px;
-    border-radius: 5px;
-    padding: 0 5px;
+    text-align: center;
+    border-bottom: 1px solid #a1a3a5;
 
     .btn-params-switch {
       float: right;

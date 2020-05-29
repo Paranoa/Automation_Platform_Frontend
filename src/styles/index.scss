@@ -9,7 +9,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-family: Helvetica Neue, Helvetica, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif;
+  font-size: 16px;
 }
 
 label {
@@ -23,6 +23,10 @@ html {
 
 #app {
   height: 100%;
+  font-family: Noto sans, Helvetica Neue, Helvetica, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif;
+  input {
+    font-family: Noto sans, Helvetica Neue, Helvetica, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Arial, sans-serif;
+  }
 }
 
 *,
@@ -62,4 +66,96 @@ div:focus {
 // main-container global css
 .app-container {
   padding: 20px;
+}
+
+// custom global style
+.app-btn {
+  width: 140px;
+  height: 50px;
+  line-height: 50px;
+  font-size: 14px;
+  border-radius: 5px;
+  text-align: center;
+  cursor: pointer;
+  display: inline-block;
+  transition: all .1s;
+
+  &-blue {
+    background: #0471AC;
+    color: #fff;
+    &:hover {
+      opacity: .8;
+    }
+  }
+  &-green {
+    background: #259788;
+    color: #fff;
+    &:hover {
+      background: #259788;
+      color: #fff;
+      opacity: .8;
+    }
+  }
+  &-green-hollow {
+    background: #fff;
+    color: #259788;
+    box-sizing: border-box;
+    border: 1px solid #259788;
+    &:hover {
+      background: #259788;
+      color: #fff;
+    }
+  }
+  &-white {
+    background: #fff;
+    color: #0471AC;
+    box-sizing: border-box;
+    border: 1px solid #333;
+    &:hover {
+      opacity: .8;
+    }
+  }
+  + .app-btn {
+    margin-left: 20px;
+  }
+}
+
+.app-el-btn-primary.el-button {
+  border: none;
+  background-image: linear-gradient(180deg, #FBFBFB 28%, #A9A9A9 99%);
+  color: #000;
+  &:hover, &:active, &:focus {
+    background-image: linear-gradient(180deg, #FBFBFB 28%, #A9A9A9 99%);
+    box-shadow: 2px 2px 7px 0 rgba(69,70,70,0.75), inset 2px 3px 8px 0 rgba(96,98,100,0.40);
+    border-radius: 4px;
+    color: #000;
+  }
+}
+
+.app-link-blue {
+  color: #0090DA ;
+  cursor: pointer;
+}
+
+.app-list-table.el-table {
+  border: 1px solid #74787B;
+  border-radius: 5px;
+  .el-checkbox__inner {
+    border-color: #757575
+  }
+  td, th {
+    border-right: none;
+  }
+  td, th.is-leaf {
+    border-bottom: 1px dashed #74787B;
+  }
+  th {
+    background: #f7f9fc
+  }
+}
+
+.app-single-select-table.el-table {
+  .el-table__header-wrapper .el-table-column--selection .el-checkbox {
+    display: none;
+  }
 }

@@ -1,28 +1,34 @@
 <template>
   <div class="navbar">
-    <hamburger :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
-
-    <breadcrumb class="breadcrumb-container" />
-
     <div class="right-menu">
+      <span>欢迎您 {{ userInfo.username }}</span>
+      <el-popover
+        placement="bottom"
+        width="150"
+        trigger="hover"
+      >
+        <div
+          class="popover-item"
+          @click="logout"
+        >
+          登出
+        </div>
+        <span slot="reference">
+          <svg-icon icon-class="profile" class="svg-profile" />
+        </span>
+      </el-popover>
+      <span class="lan">EN</span>
     </div>
   </div>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
-import Breadcrumb from '@/components/Breadcrumb'
-import Hamburger from '@/components/Hamburger'
 
 export default {
-  components: {
-    Breadcrumb,
-    Hamburger
-  },
   computed: {
     ...mapGetters([
-      'sidebar',
-      'avatar'
+      'userInfo'
     ])
   },
   methods: {
@@ -39,79 +45,38 @@ export default {
 
 <style lang="scss" scoped>
 .navbar {
-  height: 50px;
   overflow: hidden;
   position: relative;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0,21,41,.08);
-
-  .hamburger-container {
-    line-height: 46px;
-    height: 100%;
-    float: left;
-    cursor: pointer;
-    transition: background .3s;
-    -webkit-tap-highlight-color:transparent;
-
-    &:hover {
-      background: rgba(0, 0, 0, .025)
-    }
-  }
-
-  .breadcrumb-container {
-    float: left;
-  }
+  padding: 10px 0;
+  background: #F2F2F2;
 
   .right-menu {
     float: right;
     height: 100%;
     line-height: 50px;
+    padding-right: 30px;
+    font-size: 17px;
+    color: #333;
+    display: flex;
+    width: 226px;
+    justify-content: space-between;
 
-    &:focus {
-      outline: none;
+    .svg-profile {
+      cursor: pointer;
+      font-size: 15px;
     }
 
-    .right-menu-item {
-      display: inline-block;
-      padding: 0 8px;
-      height: 100%;
-      font-size: 18px;
-      color: #5a5e66;
-      vertical-align: text-bottom;
-
-      &.hover-effect {
-        cursor: pointer;
-        transition: background .3s;
-
-        &:hover {
-          background: rgba(0, 0, 0, .025)
-        }
-      }
+    .lan {
+      font-size: 12px;
     }
+  }
+}
 
-    .avatar-container {
-      margin-right: 30px;
-
-      .avatar-wrapper {
-        margin-top: 5px;
-        position: relative;
-
-        .user-avatar {
-          cursor: pointer;
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
-        }
-
-        .el-icon-caret-bottom {
-          cursor: pointer;
-          position: absolute;
-          right: -20px;
-          top: 25px;
-          font-size: 12px;
-        }
-      }
-    }
+.popover-item {
+  padding: 5px 10px;
+  cursor: pointer;
+  &:hover {
+    background: #f8f8f8
   }
 }
 </style>

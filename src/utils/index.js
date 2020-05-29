@@ -106,70 +106,15 @@ export function param2Obj(url) {
   )
 }
 
-export function compileCode(code, rules) {
-  console.log('code: ', code)
-  const matchSnippet = (match, type) => {
-    const funcName = match[1]
-    const paramStr = match[2]
-    const params = paramStr.split(',')
-    const rule = rules[funcName]
-    console.log('snippetMatchResult:', 'funcName', funcName, 'paramStr', paramStr, 'params', params, 'rule', rule)
-    // 关键字名不存在
-    if (!rule) {
-      return false
-    }
-    // 参数个数匹配则视为通过
-    if (params.length === rule.count && type === rule.keytype) {
-      return {
-        id: rule.id,
-        params: params
-      }
-    }
-    return false
-  }
-
-  const getCompileId = (snippet) => {
-    // 匹配 $name[...params]
-    const match_type_1 = snippet.match(/^([^()[\]]*)\[(.*)\]$/)
-    // 匹配 $name(...params)
-    const match_type_2 = snippet.match(/^([^()[\]]*)\((.*)\)$/)
-    
-    if (match_type_1 && match_type_1.length >= 3) {
-      return matchSnippet(match_type_1, 1)
-    } else if (match_type_2 && match_type_2.length >= 3) {
-      return matchSnippet(match_type_2, 2)
-    } else {
-      // 不匹配$name[...params]与$name(...params), 则从关键字中匹配
-      const keyword = rules._keywords.find(({ value }) => snippet === value)
-      if (keyword) {
-        return {
-          id: keyword.id
-        }
-      } else {
-        return false
-      }
-    }
-  }
-  
-  // 移除换行符
-  const statements = code.replace(/\n/g, '').split(';')
-  const results = []
-  for (const statement of statements) {
-    const snippets = statement.split(' ')
-    console.log('snippets: ', snippets)
-    for (const snippet of snippets) {
-      if (snippet) {
-        const result = getCompileId(snippet)
-        if (result) {
-          console.log(`compile success:}`, result)
-          results.push(result)
-        } else {
-          console.log('compile failed')
-          return false
-        }
-      }
-    }
-  }
-  console.log(results)
-  return results
+/**
+ * @param {Object} Object
+ * @param {Aray} filterProps
+ * @returns {Object}
+ */
+export function filterProp(obj, columns) {
+  const result = {}
+  columns.forEach(key => {
+    key in obj && (result[key] = obj[key])
+  })
+  return result
 }

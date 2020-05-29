@@ -5,7 +5,8 @@ const state = {
     opened: Cookies.get('sidebarStatus') ? !!+Cookies.get('sidebarStatus') : true,
     withoutAnimation: false
   },
-  device: 'desktop'
+  device: 'desktop',
+  lastInterfacePageState: Cookies.get('lastInterfacePageState') ? Cookies.get('lastInterfacePageState') : 'Interface'
 }
 
 const mutations = {
@@ -25,6 +26,10 @@ const mutations = {
   },
   TOGGLE_DEVICE: (state, device) => {
     state.device = device
+  },
+  SET_LAST_INTERFACE_PAGE_STATE: (state, name) => {
+    Cookies.set('lastInterfacePageState', name)
+    state.lastInterfacePageState = name
   }
 }
 
@@ -37,6 +42,9 @@ const actions = {
   },
   toggleDevice({ commit }, device) {
     commit('TOGGLE_DEVICE', device)
+  },
+  setLastInterfacePageState({ commit }, name) {
+    commit('SET_LAST_INTERFACE_PAGE_STATE', name)
   }
 }
 

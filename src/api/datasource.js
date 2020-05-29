@@ -22,5 +22,4 @@ export function updateDatasource(params, data) {
     method: 'put',
     data
   })
-
 }

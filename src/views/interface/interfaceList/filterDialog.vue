@@ -2,19 +2,25 @@
   <el-dialog
     title="筛选条件"
     :visible="visible"
-    width="40%"
+    width="20%"
     append-to-body
     :before-close="handleCancel"
   >
     <el-form label-width="80px" :model="form">
-      <el-form-item label="名称">
-        <el-input v-model="form.name" />
+      <el-form-item label="类型">
+        <el-select v-model="form.interface_type" :disabled="isStaticData('interface_type')">
+          <el-option label="全部" value="" />
+          <el-option label="接口" :value="1" />
+          <el-option label="流程" :value="2" />
+        </el-select>
       </el-form-item>
-      <el-form-item label="活动区域">
-        <el-input v-model="form.region" />
-      </el-form-item>
-      <el-form-item label="活动形式">
-        <el-input v-model="form.type" />
+      <el-form-item label="运行状态" :disabled="isStaticData('status')">
+        <el-select v-model="form.status">
+          <el-option label="全部" value="" />
+          <el-option label="未运行" :value="1" />
+          <el-option label="运行中" :value="2" />
+          <el-option label="运行完成" :value="3" />
+        </el-select>
       </el-form-item>
     </el-form>
     <span slot="footer" class="dialog-footer">
@@ -36,11 +42,21 @@ export default {
       default() {
         return {}
       }
+    },
+    staticData: {
+      // 该属性作为固有属性, 将带入默认值并不可修改（若有）
+      type: Object,
+      default() {
+        return {}
+      }
     }
   },
   data() {
     return {
-      form: {}
+      form: {
+        interface_type: '',
+        status: ''
+      }
     }
   },
   watch: {
@@ -51,9 +67,20 @@ export default {
         }
       },
       immediate: true
+    },
+    staticData: {
+      handler(val) {
+        for (const key in val) {
+          this.form[key] = val[key]
+        }
+      },
+      immediate: true
     }
   },
   methods: {
+    isStaticData(key) {
+      return key in this.staticData
+    },
     handleCancel() {
       this.$emit('update:visible', false)
     },

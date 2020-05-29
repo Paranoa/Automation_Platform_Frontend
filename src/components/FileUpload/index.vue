@@ -10,12 +10,15 @@
     :on-change="onChange"
     :auto-upload="autoUpload"
     :file-list="fileList"
+    :headers="headers"
   >
     <el-button size="mini" type="primary">点击上传</el-button>
   </el-upload>
 </template>
 
 <script>
+
+import { getToken } from '@/utils/auth'
 export default {
   props: {
     value: {
@@ -35,11 +38,24 @@ export default {
   },
   data() {
     return {
-      fileList: []
+      fileList: [],
+      headers: {
+        AUTHORIZATION: getToken()
+      }
+    }
+  },
+  watch: {
+    value: {
+      handler(value) {
+        console.log(value)
+        this.fileList = value
+      },
+      immediate: true
     }
   },
   methods: {
     handleRemove(file, fileList) {
+      this.fileList = fileList
     },
     handlePreview(file) {
     },
@@ -54,6 +70,7 @@ export default {
         fileList.splice(0, 1)
       }
       this.$emit('input', fileList)
+      this.fileList = fileList
     },
     submit() {
       this.$refs.upload.submit()
