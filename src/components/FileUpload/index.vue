@@ -2,7 +2,7 @@
   <el-upload
     ref="upload"
     v-bind="$attrs"
-    :class="{ 'upload-single': isSingle }"
+    :class="{ 'upload-single': !multiple }"
     :on-preview="handlePreview"
     :on-remove="handleRemove"
     :before-upload="beforeUpload"
@@ -11,6 +11,7 @@
     :auto-upload="autoUpload"
     :file-list="fileList"
     :headers="headers"
+    :multiple="multiple"
   >
     <el-button size="mini" type="primary">点击上传</el-button>
   </el-upload>
@@ -31,9 +32,9 @@ export default {
       type: Boolean,
       default: false
     },
-    isSingle: {
+    multiple: {
       type: Boolean,
-      default: true
+      default: false
     }
   },
   data() {
@@ -47,7 +48,6 @@ export default {
   watch: {
     value: {
       handler(value) {
-        console.log(value)
         this.fileList = value
       },
       immediate: true
@@ -66,7 +66,7 @@ export default {
     },
     onChange(file, fileList) {
       // 限制上传一个文件 上传第二个时覆盖
-      if (fileList.length === 2) {
+      if (!this.multiple && fileList.length >= 2) {
         fileList.splice(0, 1)
       }
       this.$emit('input', fileList)

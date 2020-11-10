@@ -7,7 +7,7 @@
       </el-row>
       <keyValueTable
         type="file"
-        :key-value-list="keyValueList"
+        v-bind="$attrs"
       />
     </template>
     <template v-else>
@@ -33,7 +33,7 @@
       />
       <keyValueTable
         v-show="type==='keyValue' || !isShowParamsString"
-        :key-value-list="keyValueList"
+        v-bind="$attrs"
       />
     </template>
   </div>
@@ -45,10 +45,6 @@ import KeyValueTable from './KeyValueTable'
 export default {
   components: { KeyValueTable },
   props: {
-    keyValueList: {
-      type: Array,
-      required: true
-    },
     type: {
       validator: function(value) {
         return ['query', 'keyValue', 'file'].indexOf(value) !== -1

@@ -67,18 +67,6 @@
         :default-data="filterForm"
         @selected="handleFilterSelected"
       />
-
-      <EnvironmentManage
-        v-if="selectedProject"
-        :project="selectedProject"
-        :visible.sync="environmentManageVisible"
-      />
-
-      <UserManage
-        v-if="selectedProject"
-        :project="selectedProject"
-        :visible.sync="userManageVisible"
-      />
     </div>
   </div>
 </template>
@@ -89,16 +77,11 @@ import AppSearch from '@/components/AppSearch'
 import Pagination from '@/components/Pagination'
 import FilterDialog from './filterDialog'
 
-const EnvironmentManage = () => import('./environmentManage')
-const UserManage = () => import('./userManage')
-
 export default {
   components: {
     AppSearch,
     Pagination,
-    FilterDialog,
-    EnvironmentManage,
-    UserManage
+    FilterDialog
   },
   props: {
     tableHeight: {
@@ -130,13 +113,12 @@ export default {
       filterDialogVisible: false,
       filterForm: {
         level: null,
-        status: null
+        status: null,
+        name: ''
       },
       filterFormConfirmed: {
       },
-      selectedProject: false,
-      environmentManageVisible: false,
-      userManageVisible: false
+      selectedProject: false
     }
   },
 
@@ -173,10 +155,9 @@ export default {
       this.filterDialogVisible = true
     },
     handleFilterSelected(form) {
-      this.filterForm = {
-        ...this.filterForm,
-        ...form
-      }
+      Object.keys(form).forEach(key => {
+        this.filterForm[key] = form[key]
+      })
       this.confirmFilterForm()
       this.$nextTick(_ => this.refreshProjectList())
     },
@@ -203,18 +184,18 @@ export default {
         name: 'projectUsers',
         params: { project }
       })
-      this.selectedProject = project
-      this.userManageVisible = true
     },
     getSelection() {
       return this.$refs.projectList.selection
     },
     handleFilterConfirmed() {
       this.confirmFilterForm()
+      console.log(this.filterFormConfirmed.name)
       this.$nextTick(_ => this.refreshProjectList())
     },
     confirmFilterForm() {
       this.filterFormConfirmed = {
+        ...this.filterFormConfirmed,
         ...this.filterForm
       }
     }

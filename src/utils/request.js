@@ -4,6 +4,7 @@ import store from '@/store'
 import { getToken, getRefreshToken, setToken } from '@/utils/auth'
 import { refreshToken } from '@/api/user'
 
+let isLogingout = false
 // create an axios instance
 const service = axios.create({
   baseURL: process.env.VUE_APP_BASE_API, // url = base url + request url
@@ -56,17 +57,21 @@ service.interceptors.response.use(
           }
         })
       } else if (res.code === 401) {
-        MessageBox.confirm('登录已超时, 点取消留在当前页面, 点确定重新登录', '登录超时', {
-          confirmButtonText: '重新登录',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          store.dispatch('user/resetToken').then(() => {
-            location.reload()
+        if (!isLogingout) {
+          isLogingout = true
+          MessageBox.confirm('登录已超时, 点取消留在当前页面, 点确定重新登录', '登录超时', {
+            confirmButtonText: '重新登录',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            store.dispatch('user/resetToken').then(() => {
+              location.reload()
+            })
+          }).catch(err => {
+            isLogingout = false
+            console.error(err)
           })
-        }).catch(err => {
-          console.error(err)
-        })
+        }
       } else {
         return Promise.reject(res)
       }
@@ -78,9 +83,9 @@ service.interceptors.response.use(
     console.log('err' + error) // for debug
     let message = ''
     if (error.response && error.response.data) {
-      message = error.response.data.message
+      message = error.response.data.message || '网络不给力'
     } else {
-      message = error.message
+      message = '网络不给力'
     }
     Message({
       message,

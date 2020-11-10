@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-export function getExcutionSet(params) {
+export function getExecutionSet(params) {
   return request({
     url: '/executionsetmanagement/executiontset/',
     method: 'get',
@@ -8,7 +8,7 @@ export function getExcutionSet(params) {
   })
 }
 
-export function addExcutionSet(data) {
+export function addExecutionSet(data) {
   return request({
     url: '/executionsetmanagement/executiontset/',
     method: 'post',
@@ -16,7 +16,7 @@ export function addExcutionSet(data) {
   })
 }
 
-export function updateExcutionSet(params, data) {
+export function updateExecutionSet(params, data) {
   return request({
     url: `/executionsetmanagement/executiontset/${params.id}/`,
     method: 'put',
@@ -24,14 +24,14 @@ export function updateExcutionSet(params, data) {
   })
 }
 
-export function deleteExcutionSet(params) {
+export function deleteExecutionSet(params) {
   return request({
     url: `/executionsetmanagement/executiontset/${params.id}/`,
     method: 'delete'
   })
 }
 
-export function getExcutionInterface(pathParams, params) {
+export function getExecutionInterface(pathParams, params) {
   return request({
     url: `/executionsetmanagement/executiontset/${pathParams.id}/`,
     method: 'get',

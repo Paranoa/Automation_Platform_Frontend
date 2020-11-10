@@ -1,8 +1,7 @@
 <template>
   <div v-loading="loading" class="env-detail-main">
     <div v-for="env of envData" :key="env.name" class="env-detail-main-content">
-      <h3 class="title">服务器
-      </h3>
+      <h3 class="title">服务器</h3>
       <el-table
         :data="env.envs"
         style="width: 100%"

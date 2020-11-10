@@ -1,6 +1,6 @@
 <template>
   <div class="json-editor">
-    <textarea ref="textarea" />
+    <textarea ref="textarea" v-bind="$attrs" />
   </div>
 </template>
 
@@ -41,12 +41,29 @@ export default {
   },
   watch: {
     value(value) {
-      if (this.mode === 'application/json') {
-        return
-      }
       const editorValue = this.codeEditor.getValue()
-      if (value !== editorValue) {
-        this.codeEditor.setValue(this.value)
+      if (this.mode === 'application/json') {
+        // if (value == null) {
+        //   console.log(editorValue)
+        //   return
+        // }
+        // // 统一格式后比较 如果value对应的obj对象发生了变化 则setValue
+        // const stringValue = JSON.stringify(this.value, null)
+        // let editorValueParsed = ''
+        // try {
+        //   editorValueParsed = JSON.stringify(JSON.parse(editorValue))
+        //   console.log(stringValue, editorValueParsed)
+        //   if (stringValue !== editorValueParsed) {
+        //     this.codeEditor.setValue(JSON.stringify(this.value, null, 2))
+        //   }
+        // } catch (e) {
+        //   // editorValue 不是一个JSON String
+        //   this.codeEditor.setValue(JSON.stringify(this.value, null, 2))
+        // }
+      } else {
+        if (value !== editorValue) {
+          this.codeEditor.setValue(this.value)
+        }
       }
     }
   },

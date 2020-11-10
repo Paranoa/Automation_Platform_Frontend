@@ -52,9 +52,9 @@ export default {
   watch: {
     defaultData: {
       handler(val) {
-        for (const key in val) {
+        Object.keys(this.form).forEach(key => {
           this.form[key] = val[key]
-        }
+        })
       },
       immediate: true
     }

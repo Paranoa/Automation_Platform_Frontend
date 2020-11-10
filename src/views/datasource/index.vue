@@ -3,7 +3,7 @@
     <Navbar />
     <div class="datasource-container">
       <div class="datasource-search">
-        <AppSearch v-model="form.name" class="datasource-search-input" @query="refreshDatasourceList" />
+        <AppSearch v-model="form.title" class="datasource-search-input" @query="refreshDatasourceList" />
         <!-- <svg-icon icon-class="filter" class="datasource-search-filter" @click="showFilterDialog" /> -->
         <el-select v-model="projectId" size="mini" class="datasource-search-project">
           <el-option
@@ -130,7 +130,7 @@ export default {
     }
     return {
       form: {
-        name: ''
+        title: ''
       },
       baseUrl,
       projectId,
@@ -152,7 +152,7 @@ export default {
     appendParams() {
       return {
         project: this.projectId,
-        name: this.form.name
+        title: this.form.title
       }
     }
   },

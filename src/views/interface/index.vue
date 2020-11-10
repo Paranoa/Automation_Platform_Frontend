@@ -107,7 +107,7 @@
             show-selection
             table-height="calc(100vh - 18.125vw)"
             :append-params="appendParams"
-            @selectionChange="activeTab = 'interface'"
+            @select="activeTab = 'interface'"
           />
         </div>
       </div>
@@ -236,6 +236,10 @@ export default {
   },
   methods: {
     selectModule(item) {
+      if (this.activeTab !== 'module') {
+        this.activeTab = 'module'
+        return
+      }
       if (this.currModule === item) {
         this.currModule = null
       } else {

@@ -2,10 +2,6 @@
   <div class="user-manage-container">
     <div v-if="project" class="user-manage-info">
       <div class="row">
-        <span>
-          <label>项目编号：</label>
-          <span>{{ project.id }}</span>
-        </span>
         <span :span="3">
           <label>项目名称： </label>
           <span>{{ project.name }}</span>

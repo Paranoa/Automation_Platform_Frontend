@@ -6,10 +6,10 @@
           运行-环境选择
         </div>
         <el-form
-          ref="excuteForm"
+          ref="executeForm"
           label-position="left"
           :model="form"
-          :rules="excuteInterfaceRules"
+          :rules="executeInterfaceRules"
           :inline="true"
         >
           <el-form-item label="目标服务器选择" prop="server" label-width="150px">
@@ -17,10 +17,11 @@
               <el-option v-for="server of serverList" :key="server.id" :label="server.name" :value="server.id" />
             </el-select>
           </el-form-item>
-          <el-form-item label="执行机" prop="excuteion" label-width="80px" class="mgl20">
-            <el-input v-model="form.excuteion" />
+          <el-form-item label="执行机" prop="executeion" label-width="80px" class="mgl20">
+            <el-select v-model="form.executeion">
+              <el-option v-for="executor of executorList" :key="executor.id" :label="executor.name" :value="executor.ip" />
+            </el-select>
           </el-form-item>
-          <span class="app-btn app-btn-green mgl20">添加</span>
         </el-form>
         <div class="run-interface-title">
           用例选择
@@ -32,7 +33,7 @@
       <el-table
         v-if="excelList"
         ref="caseList"
-        v-loading="fetchingData"
+        v-loading="fetchDataLoading"
         :data="excelListFormated"
         element-loading-text="Loading"
         fit
@@ -61,16 +62,17 @@
         </el-table-column>
       </el-table>
       <span slot="footer" class="dialog-footer">
-        <span class="app-btn app-btn-blue" type="primary" @click="handleConfirm">运 行</span>
-        <span class="app-btn app-btn-white" @click="handleCancel">取 消</span>
+        <span v-loading="executeLoading" class="app-btn app-btn-blue" type="primary" @click="handleConfirm">运 行</span>
+        <span class="app-btn app-btn-white" @click="handleCancel">返 回</span>
       </span>
     </div>
   </div>
 </template>
 <script>
-import { excuteInterface, getExcelByInterface } from '@/api/interface'
+import { getExecutor } from '@/api/user'
+import { executeInterface, getExcelByInterface, getInterfaceInfo } from '@/api/interface'
 import { getProjectEnv } from '@/api/project'
-import excuteInterfaceRules from '@/rules/excuteInterfaceRules'
+import executeInterfaceRules from '@/rules/executeInterfaceRules'
 import AppSearch from '@/components/AppSearch'
 export default {
   components: {
@@ -80,17 +82,19 @@ export default {
     return {
       form: {
         server: '',
-        excuteion: '127.0.0.1'
+        executeion: ''
       },
       excelList: [],
       serverList: [],
-      excuteInterfaceRules,
-      excutionResultVisible: false,
-      fetchingData: false,
+      executorList: [],
+      executeInterfaceRules,
+      executionResultVisible: false,
+      fetchDataLoading: false,
       page: 0,
       pageSize: 15,
       excelListFilterText: '',
-      excelListFilterTextConfirmed: ''
+      excelListFilterTextConfirmed: '',
+      executeLoading: false
     }
   },
   computed: {
@@ -120,9 +124,22 @@ export default {
       return this.page * this.pageSize < this.excelTotal
     }
   },
+  beforeRouteEnter(to, from, next) {
+    if (!to.params.interfaceObj) {
+      getInterfaceInfo({
+        id: to.params.interfaceId
+      }).then(res => {
+        to.params.interfaceObj = res.data
+        next()
+      })
+    } else {
+      next()
+    }
+  },
   created() {
     const { project } = this.interfaceObj
     this.getServerList(project)
+    this.getExecutorList()
     this.fetchExcel().then(_ => {
       this.$nextTick(_ => {
         // 如果tablebody高度大于wrapper高度 添加scroll事件
@@ -132,10 +149,10 @@ export default {
         if (tableBody.offsetHeight > tableWrapper.offsetHeight) {
           tableWrapper.addEventListener('scroll', () => {
             if (this.hasMoreExcel && tableWrapper.offsetHeight + tableWrapper.scrollTop >= tableBody.offsetHeight) {
-              if (this.fetchingData) return
-              this.fetchingData = true
+              if (this.fetchDataLoading) return
+              this.fetchDataLoading = true
               this.fetchExcel().finally(_ => {
-                this.fetchingData = false
+                this.fetchDataLoading = false
               })
             }
           })
@@ -166,12 +183,21 @@ export default {
         this.serverList = data
       })
     },
+    getExecutorList() {
+      getExecutor().then(({ data }) => {
+        this.executorList = data
+      })
+    },
     handleCancel() {
       this.$router.go(-1)
     },
     handleConfirm() {
+      if (this.executeLoading) return
       this.validateForm()
-        .then(this.excuteInterface)
+        .then(_ => {
+          this.executeLoading = true
+          return this.executeInterface()
+        })
         .then(res => {
           this.$message({
             message: '运行成功',
@@ -185,10 +211,12 @@ export default {
               type: 'error'
             })
           }
+        }).finally(_ => {
+          this.executeLoading = false
         })
     },
     validateForm() {
-      return this.$refs.excuteForm.validate().then(_ => {
+      return this.$refs.executeForm.validate().then(_ => {
         const case_id = this.$refs.caseList.selection.map(({ id }) => id)
         if (!case_id.length) {
           return Promise.reject(new Error('请选择用例'))
@@ -196,13 +224,13 @@ export default {
         return Promise.resolve()
       })
     },
-    excuteInterface() {
+    executeInterface() {
       const case_id = this.$refs.caseList.selection.map(({ id }) => id)
-      return excuteInterface({
+      return executeInterface({
         interface_id: [this.interfaceObj.id],
         case_id,
         server_id: this.form.server,
-        executive_machine: this.form.excuteion
+        executive_machine: this.form.executeion
       })
     },
     refreshExcelList() {

@@ -1,7 +1,7 @@
 <template>
   <div class="datasource-list-container">
     <div v-if="showSearch" class="datasource-search">
-      <AppSearch v-model="form.query" class="datasource-search-input" />
+      <AppSearch v-model="form.title" class="datasource-search-input" />
       <svg-icon icon-class="filter" class="datasource-search-filter" @click="showFilterDialog" />
     </div>
     <div class="datasource-main">
@@ -30,7 +30,7 @@
         </el-table-column>
         <el-table-column label="关联接口/流程">
           <template slot-scope="scope">
-            {{ scope.row.interfacename }}
+            {{ scope.row.interfacename || '-' }}
           </template>
         </el-table-column>
         <el-table-column label="修改时间" align="center">
@@ -137,7 +137,7 @@ export default {
   data() {
     return {
       form: {
-        query: ''
+        title: ''
       },
       list: null,
       total: 0,
@@ -197,7 +197,8 @@ export default {
       this.$emit('editDatasource', datasource)
     },
     downloadData(datasource) {
-      window.open(datasource.file_name)
+      const origin = process.env.VUE_APP_FILE_SERVER
+      window.open(origin + datasource.file_name)
     },
     deleteData(datasource) {
       this.$confirm('将删除数据源, 是否继续?', '提示').then(_ => {

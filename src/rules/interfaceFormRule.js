@@ -12,7 +12,7 @@ export default {
     { required: true, trigger: 'change', message: '请选择服务器' }
   ],
   template_port: [
-    { required: true, trigger: 'blur', message: '请填写端口' }
+    { required: true, trigger: 'change', message: '请填写端口' }
   ],
   request_way: [
     { required: true, trigger: 'change', message: '请选择请求方式' }

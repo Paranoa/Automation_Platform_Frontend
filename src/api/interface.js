@@ -86,7 +86,7 @@ export function getExcelByInterface(pathParams, params) {
   })
 }
 
-export function excuteInterface(data) {
+export function executeInterface(data) {
   return request({
     url: '/interfacemanagement/interfaces/execute/',
     method: 'post',
@@ -94,7 +94,7 @@ export function excuteInterface(data) {
   })
 }
 
-export function terminateExcuteInterface(data) {
+export function terminateExecuteInterface(data) {
   return request({
     url: '/interfacemanagement/interfaces/end/',
     method: 'post',
@@ -102,7 +102,7 @@ export function terminateExcuteInterface(data) {
   })
 }
 
-export function excuteInterfaceResult(params) {
+export function executeInterfaceResult(params) {
   return request({
     url: `/interfacemanagement/execute/result/${params.id}/`,
     method: 'get'
@@ -128,6 +128,53 @@ export function deleteAccessories(data) {
 export function getAccessories(params) {
   return request({
     url: '/interfacemanagement/interfaces/accessories/',
+    method: 'get',
+    params
+  })
+}
+
+export function updateFormDataFile(params, formData) {
+  return request({
+    url: `/interfacemanagement/interfaces/formdata/${params.id}/`,
+    method: 'put',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
+export function addFormDataFile(params, formData) {
+  return request({
+    url: `/interfacemanagement/interfaces/formdata/`,
+    method: 'post',
+    params,
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
+export function updateFormDataText(data) {
+  return request({
+    url: '/interfacemanagement/interfaces/formdata/',
+    method: 'post',
+    data
+  })
+}
+
+export function deleteFormDataFile(data) {
+  return request({
+    url: `/interfacemanagement/interfaces/formdata/`,
+    method: 'delete',
+    data
+  })
+}
+
+export function getReport(params) {
+  return request({
+    url: '/interfacemanagement/interfaces/logging/',
     method: 'get',
     params
   })

@@ -80,10 +80,16 @@ div:focus {
   display: inline-block;
   transition: all .1s;
 
+  &.el-button {
+    line-height: unset;
+  }
+
   &-blue {
     background: #0471AC;
     color: #fff;
     &:hover {
+      background: #0471AC;
+      color: #fff;
       opacity: .8;
     }
   }
@@ -112,6 +118,9 @@ div:focus {
     box-sizing: border-box;
     border: 1px solid #333;
     &:hover {
+      background: #fff;
+      color: #0471AC;
+      border: 1px solid #666;
       opacity: .8;
     }
   }

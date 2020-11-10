@@ -15,6 +15,7 @@
         :height="tableHeight"
         :class="tableClassCombined"
         @selection-change="handleSelectionChange"
+        v-on="$listeners"
       >
         <el-table-column
           v-if="showSelection"
@@ -43,7 +44,7 @@
         </el-table-column>
         <el-table-column label="步骤" align="center">
           <template slot-scope="scope">
-            {{ scope.row.step }}
+            {{ scope.row.step_count || '-' }}
           </template>
         </el-table-column>
         <el-table-column align="center" prop="created_at" label="创建时间" width="200">
@@ -114,9 +115,9 @@
       </span>
     </el-dialog>
 
-    <ExcutionResult
+    <ExecutionResult
       v-if="currInterface && caseResultList"
-      :visible.sync="excutionResultVisible"
+      :visible.sync="executionResultVisible"
       :interface-obj="currInterface"
       :case-result-list="caseResultList"
     />
@@ -141,7 +142,7 @@
       />
       <span slot="footer" class="dialog-footer">
         <el-button @click="handleCancelChoose">取 消</el-button>
-        <el-button v-loading="chooseLoading" :disabled="chooseLoading" type="primary" @click="handleConfirmChoose">确 定</el-button>
+        <el-button v-loading="chooseLoading" type="primary" @click="handleConfirmChoose">确 定</el-button>
       </span>
     </el-dialog>
 
@@ -149,13 +150,14 @@
 </template>
 
 <script>
-import { getInterfaceList, terminateExcuteInterface } from '@/api/interface'
+import { getInterfaceList, terminateExecuteInterface } from '@/api/interface'
 import { updateDatasource } from '@/api/datasource'
 import FileUpload from '@/components/FileUpload'
 import AppSearch from '@/components/AppSearch'
 import Pagination from '@/components/Pagination'
 import FilterDialog from './filterDialog'
-import ExcutionResult from './excutionResult'
+import ExecutionResult from './executionResult'
+import mySocket from '@/websocket'
 
 const baseUrl = process.env.VUE_APP_BASE_API
 
@@ -166,7 +168,7 @@ export default {
     Pagination,
     FilterDialog,
     FileUpload,
-    ExcutionResult,
+    ExecutionResult,
     DatasourceList: () => import('@/views/datasource/datasourceList')
   },
   props: {
@@ -229,10 +231,11 @@ export default {
       excelList: null,
       serverListCache: {},
       runInterfaceVisible: false,
-      excutionResultVisible: false,
+      executionResultVisible: false,
       caseResultList: [],
       datasourceListVisible: false,
-      chooseLoading: false
+      chooseLoading: false,
+      refreshTimer: null
     }
   },
   computed: {
@@ -261,18 +264,46 @@ export default {
   },
   created() {
     this.getInterfaceList()
+    // this.startAutoRefreshListener()
   },
   methods: {
-    getInterfaceList() {
-      this.listLoading = true
+    getInterfaceList(isSilence) {
+      if (!isSilence) this.listLoading = true
       getInterfaceList({
         page: this.listQuery.page,
         page_size: this.listQuery.limit,
         ...this.appendParamsCombined
       }).then(response => {
-        this.list = response.data.results
-        this.total = response.data.count
-        this.listLoading = false
+        if (!isSilence) {
+          this.list = response.data.results
+          this.total = response.data.count
+          this.listLoading = false
+        } else {
+          this.list.forEach(obj => {
+            const updateObj = response.data.results.find(({ id }) => id === obj.id)
+            Object.keys(updateObj).forEach(key => {
+              obj[key] = updateObj[key]
+            })
+          })
+          this.total = response.data.count
+        }
+      })
+    },
+    startAutoRefreshListener() {
+      mySocket({
+        listeners: {
+          connect: () => {
+            console.log('debug connected')
+          },
+          message: data => {
+            if (data && data.is_debug) {
+              this.getInterfaceList(true)
+            }
+          },
+          disconnect: () => {
+            console.log('debug disconnected')
+          }
+        }
       })
     },
     refreshInterfaceList() {
@@ -315,8 +346,9 @@ export default {
     },
     runInterface(interfaceObj) {
       this.$router.push({
-        name: 'InterfaceExcute',
+        name: 'InterfaceExecute',
         params: {
+          interfaceId: interfaceObj.id,
           interfaceObj
         }
       })
@@ -324,7 +356,7 @@ export default {
     terminateInterface(interfaceObj) {
       this.$confirm('确认停止接口运行？').then(_ => {
         this.listLoading = true
-        terminateExcuteInterface({
+        terminateExecuteInterface({
           interfaceid: [interfaceObj.id]
         }).then(_ => {
           this.$message({
@@ -344,18 +376,6 @@ export default {
     },
     bindData(interfaceObj) {
       if (interfaceObj.source_title) {
-        // const match = interfaceObj.url.match(/\/([^/]*)\.[^\.]*$/)
-        // if (match && match[1]) {
-        //   const fileName = match[1]
-        //   this.addForm.fileName = fileName
-        //   this.addForm.datasourceFile = [{
-        //     name: fileName
-        //   }]
-        //   console.log(this.addForm)
-        // } else {
-        //   this.addForm.fileName = ''
-        //   this.addForm.datasourceFile = []
-        // }
         const fileName = interfaceObj.source_title
         this.addForm.fileName = fileName
         this.addForm.datasourceFile = [{
@@ -371,7 +391,7 @@ export default {
     },
     checkResult(interfaceObj) {
       this.$router.push({
-        name: 'InterfaceExcuteResult',
+        name: 'InterfaceExecuteResult',
         params: {
           id: interfaceObj.id,
           name: interfaceObj.name
@@ -452,6 +472,7 @@ export default {
       this.datasourceListVisible = false
     },
     handleConfirmChoose() {
+      if (this.chooseLoading) return
       const [datasource] = this.$refs.datasourceList.getSelection()
       const { id } = datasource
       this.chooseLoading = true

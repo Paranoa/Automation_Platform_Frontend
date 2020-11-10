@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import { addExcutionSet, updateExcutionSet } from '@/api/excution'
+import { addExecutionSet, updateExecutionSet } from '@/api/execution'
 export default {
   props: {
     visible: {
@@ -80,7 +80,7 @@ export default {
     },
     handleConfirm() {
       if (this.isEdit) {
-        updateExcutionSet({
+        updateExecutionSet({
           id: this.folder.id
         }, {
           name: this.form.name
@@ -93,7 +93,7 @@ export default {
           this.$emit('update:visible', false)
         })
       } else {
-        addExcutionSet({
+        addExecutionSet({
           name: this.form.name,
           type: 1,
           parent: this.parentId,

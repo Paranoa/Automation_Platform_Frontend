@@ -1,11 +1,11 @@
 <template>
   <div>
     <Navbar />
-    <div class="excution-container">
-      <div class="excution-search">
-        <AppSearch v-model="filterForm.name" class="excution-search-input" @query="handleFilterConfirmed" />
-        <svg-icon icon-class="filter" class="excution-search-filter" />
-        <el-select v-model="projectId" size="mini" class="excution-search-project">
+    <div class="execution-container">
+      <div class="execution-search">
+        <AppSearch v-model="filterForm.name" class="execution-search-input" @query="handleFilterConfirmed" />
+        <!-- <svg-icon icon-class="filter" class="execution-search-filter" /> -->
+        <el-select v-model="projectId" size="mini" class="execution-search-project">
           <el-option
             v-for="project of $store.getters.allProjects"
             :key="project.id"
@@ -80,7 +80,7 @@
             plain
             size="small"
             class="app-el-btn-primary"
-            @click="deleteInterfaceFromExcution"
+            @click="deleteInterfaceFromExecution"
           >删除接口
           </el-button>
           <el-button
@@ -95,10 +95,17 @@
             class="app-el-btn-primary"
           >执行报告
           </el-button>
+          <el-button
+            plain
+            size="small"
+            class="app-el-btn-primary"
+            @click="showTimedTask()"
+          >添加定时任务
+          </el-button>
         </template>
       </div>
-      <div class="excution-main">
-        <div class="excution-caseset" :class="{ 'active': activeTab === 'caseSet' }" @click="activeTab = 'caseSet'">
+      <div class="execution-main">
+        <div class="execution-caseset" :class="{ 'active': activeTab === 'caseSet' }" @click="activeTab = 'caseSet'">
           <div class="caseset-header">
             <span class="title">当前项目：</span>
             <span v-if="selectedProject">{{ selectedProject.name }}</span>
@@ -136,13 +143,14 @@
             </el-tree>
           </div>
         </div>
-        <div class="excution-list" :class="{ 'active': activeTab === 'interface' }" @click="activeTab = 'interface'">
-          <ExcutionInterfaceList
-            ref="excutionInterfaceList"
+        <div class="execution-list" :class="{ 'active': activeTab === 'interface' }" @click="activeTab = 'interface'">
+          <ExecutionInterfaceList
+            ref="executionInterfaceList"
             table-height="calc(100vh - 17.97vw)"
             show-selection
-            :append-params="appendParamsExcution"
-            @selectionChange="activeTab = 'interface'"
+            :append-params="appendParamsExecution"
+            @selection-change="activeTab = 'interface'"
+            @timed-task="row => showTimedTask(row)"
           />
         </div>
       </div>
@@ -194,20 +202,20 @@
       </span>
     </el-dialog>
     <el-dialog
-      title="选择运行环境"
+      title="选择批量运行环境"
       width="20%"
       append-to-body
-      :visible="excutionDialogvisible"
-      :before-close="_ => excutionDialogvisible = false"
+      :visible="executionDialogvisible"
+      :before-close="_ => executionDialogvisible = false"
     >
       <el-form
-        ref="excuteForm"
+        ref="executeForm"
         label-position="left"
         label-width="130px"
         :model="form"
         :rules="{
           server: [{ required: true, trigger: 'change', message: '请选择环境' }],
-          excuteion: [{ required: true, trigger: 'blur', message: '请输入执行机' }]
+          executor: [{ required: true, trigger: 'change', message: '请输入执行机' }]
         }"
       >
         <el-form-item label="目标环境选择：" prop="server">
@@ -215,38 +223,45 @@
             <el-option v-for="server of serverList" :key="server.id" :label="server.name" :value="server.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="执行机：" prop="excuteion">
-          <el-input v-model="form.excuteion" />
+        <el-form-item label="执行机：" prop="executor">
+          <el-select v-model="form.executor">
+            <el-option v-for="executor of executorList" :key="executor.id" :label="executor.name" :value="executor.ip" />
+          </el-select>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="excutionDialogvisible = false">取 消</el-button>
-        <el-button v-loading="isExcutionLoading" type="primary" @click="handleExcutionConfirm">确 定</el-button>
+        <el-button @click="executionDialogvisible = false">取 消</el-button>
+        <el-button v-loading="isExecutionLoading" type="primary" @click="handleExecutionConfirm">确 定</el-button>
       </span>
     </el-dialog>
+    <TimedTask :visible.sync="timedTask.visible" :task-data="timedTask.data" @submit="handleTimedTaskSubmit" />
   </div>
 </template>
 
 <script>
 import { Navbar } from '@/layout/components'
 import InterfaceList from '../interface/interfaceList'
-import ExcutionInterfaceList from './interfaceList'
-import { getExcutionSet, deleteExcutionSet, updateExcutionSet } from '@/api/excution'
-import { excuteInterface } from '@/api/interface'
+import ExecutionInterfaceList from './interfaceList'
+import { getExecutionSet, deleteExecutionSet, updateExecutionSet } from '@/api/execution'
+import { executeInterface } from '@/api/interface'
 import { getProjectEnv } from '@/api/project'
 import AppSearch from '@/components/AppSearch'
 import AddFolder from './addFolder'
 import AddCaseSet from './addCaseSet'
+import { getExecutor } from '@/api/user'
+import { getTimedtask, addTimedtask, deleteTimedtask } from '@/api/task'
+import TimedTask from './TimedTask'
 
 export default {
   name: 'Execution',
   components: {
     InterfaceList,
-    ExcutionInterfaceList,
+    ExecutionInterfaceList,
     Navbar,
     AppSearch,
     AddFolder,
-    AddCaseSet
+    AddCaseSet,
+    TimedTask
   },
   data() {
     let projectId = ''
@@ -262,7 +277,9 @@ export default {
       filterForm: {
         name: ''
       },
-      filterFormConfirmed: {},
+      filterFormConfirmed: {
+        name: ''
+      },
       projectId,
       modules: [],
       activeTab: 'caseSet',
@@ -280,24 +297,28 @@ export default {
       isEditCaseSet: false,
       currentParent: null,
       interfaceVisible: false,
-      excutionDialogvisible: false,
+      executionDialogvisible: false,
       serverList: [],
       form: {
         server: '',
-        excuteion: '127.0.0.1'
+        executor: ''
       },
-      isExcutionLoading: false
+      isExecutionLoading: false,
+      executorList: [],
+      timedTask: {
+        visible: false,
+        data: {}
+      }
     }
   },
   computed: {
-    appendParamsExcution() {
+    appendParamsExecution() {
       const params = {
-        ...this.filterFormConfirmed
+        ...this.filterFormConfirmed,
+        id: null
       }
       if (this.currentNode && this.currentNode.type === 2) {
         params.id = this.currentNode.id
-      } else {
-        params.id = null
       }
       return params
     },
@@ -314,14 +335,14 @@ export default {
     projectId: {
       handler(value) {
         this.$store.dispatch('user/setSelectedProjectId', value)
-        this.getExcutionSet()
+        this.getExecutionSet()
       },
       immediate: true
     },
     currentNode: {
       handler(value) {
         this.$nextTick(_ => {
-          this.refreshExcutionInterfaceList()
+          this.refreshExecutionInterfaceList()
         })
       }
     },
@@ -333,7 +354,7 @@ export default {
   },
   activated() {
     if (this.needsRefresh) {
-      this.refreshExcutionInterfaceList()
+      this.refreshExecutionInterfaceList()
       this.refreshChooseInterfaceList()
       this.refreshSelectedProject()
     }
@@ -341,9 +362,12 @@ export default {
   deactivated() {
     this.needsRefresh = true
   },
+  created() {
+    this.getExecutorList()
+  },
   methods: {
-    getExcutionSet() {
-      getExcutionSet({
+    getExecutionSet() {
+      getExecutionSet({
         project: this.projectId
       }).then(res => {
         // 始终带有一个前端的default node
@@ -356,8 +380,13 @@ export default {
         // 测试集变更后, 清空current node并刷新接口列表
         this.currentNode = null
         this.$nextTick(_ => {
-          this.refreshExcutionInterfaceList()
+          this.refreshExecutionInterfaceList()
         })
+      })
+    },
+    getExecutorList() {
+      getExecutor().then(({ data }) => {
+        this.executorList = data
       })
     },
     handleNodeClick(data, node) {
@@ -394,7 +423,7 @@ export default {
     },
     deleteNode() {
       this.$confirm('确认删除节点？').then(_ => {
-        deleteExcutionSet({
+        deleteExecutionSet({
           id: this.currentNode.id
         }).then(_ => {
           this.$message({
@@ -414,7 +443,7 @@ export default {
     handleConfirmChoose() {
       const selection = this.$refs.interfaceList.getSelection()
       if (!selection.length) return
-      updateExcutionSet({
+      updateExecutionSet({
         id: this.currentNode.id
       }, {
         interface: selection.map(({ id }) => id)
@@ -424,7 +453,7 @@ export default {
           type: 'success'
         })
         this.interfaceVisible = false
-        this.$refs.excutionInterfaceList.getExcutionInterface()
+        this.$refs.executionInterfaceList.getExecutionInterface()
       })
     },
     handleFinish(type, data) {
@@ -444,15 +473,15 @@ export default {
         }
       }
     },
-    deleteInterfaceFromExcution() {
-      const selection = this.$refs.excutionInterfaceList.getSelection()
+    deleteInterfaceFromExecution() {
+      const selection = this.$refs.executionInterfaceList.getSelection()
       if (!selection.length) {
         this.$message({
           message: '请选择接口/流程'
         })
         return
       }
-      updateExcutionSet({
+      updateExecutionSet({
         id: this.currentNode.id
       }, {
         interface: selection.map(({ id }) => id),
@@ -462,20 +491,20 @@ export default {
           message: '删除 接口/流程 完成',
           type: 'success'
         })
-        this.$refs.excutionInterfaceList.getExcutionInterface()
+        this.$refs.executionInterfaceList.getExecutionInterface()
       })
     },
     handleFilterConfirmed() {
       this.confirmFilterForm()
-      this.$nextTick(_ => this.refreshExcutionInterfaceList())
+      this.$nextTick(_ => this.refreshExecutionInterfaceList())
     },
     confirmFilterForm() {
       this.filterFormConfirmed = {
         ...this.filterForm
       }
     },
-    refreshExcutionInterfaceList() {
-      this.$refs.excutionInterfaceList.refreshInterfaceList()
+    refreshExecutionInterfaceList() {
+      this.$refs.executionInterfaceList.refreshInterfaceList()
     },
     refreshChooseInterfaceList() {
       if (this.$refs.interfaceList) {
@@ -488,12 +517,12 @@ export default {
       }
     },
     multiRunInterface(interfaceObj) {
-      if (this.$refs.excutionInterfaceList.getSelection().length) {
+      if (this.$refs.executionInterfaceList.getSelection().length) {
         getProjectEnv({
           project: this.selectedProject.id
         }).then(({ data }) => {
           this.serverList = data
-          this.excutionDialogvisible = true
+          this.executionDialogvisible = true
         })
       } else {
         this.$message({
@@ -501,16 +530,17 @@ export default {
         })
       }
     },
-    handleExcutionConfirm() {
-      if (this.isExcutionLoading) return
-      this.isExcutionLoading = true
-      this.$refs.excuteForm.validate().then(
-        this.excuteInterface
+    handleExecutionConfirm() {
+      if (this.isExecutionLoading) return
+      this.isExecutionLoading = true
+      this.$refs.executeForm.validate().then(
+        this.executeInterface
       ).then(res => {
         this.$message({
           message: '运行成功',
           type: 'success'
         })
+        // this.$refs.interfaceList.startAutoRefreshListener()
       }).catch(err => {
         if (err) {
           this.$message({
@@ -519,17 +549,123 @@ export default {
           })
         }
       }).finally(_ => {
-        this.isExcutionLoading = false
+        this.isExecutionLoading = false
       })
     },
-    excuteInterface() {
-      const ids = this.$refs.excutionInterfaceList.getSelection().map(({ id }) => id)
-      return excuteInterface({
+    executeInterface() {
+      const ids = this.$refs.executionInterfaceList.getSelection().map(({ id }) => id)
+      return executeInterface({
         interface_id: ids,
         server_id: this.form.server,
-        executive_machine: this.form.excuteion,
+        executive_machine: this.form.executor,
         isdebug: false
       })
+    },
+    showTimedTask(row) {
+      // 编辑定时任务 首先获取详情
+      if (row) {
+        const { id } = row
+        getTimedtask({
+          interface_id: id
+        }).then(res => {
+          if (res && res.data && res.data.tip) {
+            this.$message.info(res.data.tip)
+          } else {
+            this.timedTask.data = {
+              interfaceId: [id],
+              data: formatTaskData(res.data)
+            }
+            this.timedTask.visible = true
+          }
+        })
+      } else {
+        // 添加定时任务
+        const selection = [...this.$refs.executionInterfaceList.getSelection()]
+        if (!selection.length) {
+          this.$message({
+            type: 'info',
+            message: '请选择至少一个接口'
+          })
+          return
+        }
+        this.timedTask.data = {
+          interfaceId: selection.map(({ id }) => id),
+          data: {}
+        }
+        this.timedTask.visible = true
+      }
+
+      function formatTaskData(data) {
+        const r = {}
+        for (const key in data) {
+          const value = data[key]
+          switch (key) {
+            case 'trigger':
+              var match = value.match(/(.*)\[(.*)]/)
+              if (match && match.length >= 3) {
+                var trigger = match[1]
+                var dataStr = match[2]
+                if (trigger === 'date') {
+                  var run_date = dataStr.substring(0, 19)
+                  Object.assign(r, {
+                    trigger: 'date',
+                    run_date: run_date
+                  })
+                } else if (trigger === 'cron') {
+                  Object.assign(r, {
+                    trigger: 'cron',
+                    ...handleCronData(dataStr)
+                  })
+                }
+              }
+              break
+            default:
+              r[key] = value
+          }
+        }
+        console.log(r)
+        return r
+      }
+
+      function handleCronData(data) {
+        const r = data.split(', ').reduce((accu, curr) => {
+          const match = curr.match(/(.*)='(.*)'/)
+          const k = match[1]
+          const v = match[2]
+          if (k === 'day_of_week') {
+            accu[k] = v.split(',')
+          } else {
+            accu[k] = v
+          }
+          return accu
+        }, {})
+        r.run_time = `${r.hour}:${r.minute}`
+        delete r.hour
+        delete r.minute
+        return r
+      }
+    },
+    handleTimedTaskSubmit(data, cb) {
+      // 如果类型是非定时任务 调删除接口
+      if (data.trigger === 'none') {
+        const promise = deleteTimedtask({
+          interface_id: data.interface_id
+        }).then(res => {
+          this.$message.success('更新定时任务成功')
+          this.timedTask.visible = false
+        }).catch(res => {
+          this.$message.error(res.data && res.data.tip)
+        })
+        cb(promise)
+      } else {
+        const promise = addTimedtask(data).then(res => {
+          this.$message.success('更新定时任务成功')
+          this.timedTask.visible = false
+        }).catch(res => {
+          this.$message.error(res.data && res.data.tip)
+        })
+        cb(promise)
+      }
     }
   }
 }
@@ -538,14 +674,14 @@ export default {
 <style lang="scss" scoped>
 @import '@/styles/variables.scss';
 
-.excution-container{
+.execution-container{
   display: flex;
   flex-direction: column;
   position: absolute;
   top: $navBarHeight; bottom: 0; left: 0; right: 0;
   min-height: calc(100vh - 70px);
 
-  .excution-search {
+  .execution-search {
     padding: 10px 20px 19px 20px;
     background: #F2F2F2;
     white-space: nowrap;
@@ -582,11 +718,11 @@ export default {
     }
   }
 
-  .excution-main {
+  .execution-main {
     display: flex;
     flex-grow: 1;
     border: 10px solid #D9D9D7;
-    .excution-caseset {
+    .execution-caseset {
       width: 290px;
       min-width: 290px;
       transition: all .3s;
@@ -633,7 +769,7 @@ export default {
         }
       }
     }
-    .excution-list {
+    .execution-list {
       flex-grow: 1;
       overflow: auto;
       &.active {

@@ -15,11 +15,11 @@ export function getRefreshToken() {
 }
 
 export function setToken(token) {
-  return Cookies.set(TokenKey, token)
+  return Cookies.set(TokenKey, token, { expires: 14 })
 }
 
 export function setRefreshToken(token) {
-  return Cookies.set(RefreshTokenKey, token)
+  return Cookies.set(RefreshTokenKey, token, { expires: 14 })
 }
 
 export function removeToken() {

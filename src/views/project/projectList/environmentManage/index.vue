@@ -37,8 +37,8 @@
       </el-tab-pane>
     </el-tabs>
     <span slot="footer" class="dialog-footer">
-      <div class="app-btn app-btn-blue" type="primary" @click="handleConfirm">保 存</div>
-      <div class="app-btn app-btn-white" @click="handleCancel">返 回</div>
+      <el-button v-loading="isTabLoading" class="app-btn app-btn-blue" type="primary" @click="handleConfirm">保 存</el-button>
+      <el-button class="app-btn app-btn-white" @click="handleCancel">返 回</el-button>
     </span>
   </div>
 </template>
@@ -71,14 +71,6 @@ export default {
       return this.envList.some(e => e.isEditingName)
     }
   },
-  watch: {
-    activeTabName: {
-      handler(value) {
-        if (!this.activeEnv || this.activeEnv.inited) return
-        this.initEnvTab(this.activeEnv)
-      }
-    }
-  },
   created() {
     Promise.all([
       this.getProjectEnv(),
@@ -87,6 +79,7 @@ export default {
       this.envList = envList
       this.envTemplate = template
       if (this.envList.length) {
+        this.envList.forEach(env => this.initEnvTab(env))
         const firstEnv = this.envList[0]
         this.activeTabName = `tab-${firstEnv.id}`
       } else {
@@ -244,7 +237,6 @@ export default {
       if (env.id === '_default' || env.id === '_default_new') {
         this.$set(env, 'envData', this.getEnvData(this.envTemplate))
         env.inited = true
-        return Promise.resolve()
       } else {
         env.inited = true
         this.$set(env, 'envData', this.getEnvData(this.envTemplate, env.envcontent))
@@ -277,12 +269,14 @@ export default {
       this.$router.go(-1)
     },
     handleConfirm() {
+      if (this.isTabLoading) return
       this.isTabLoading = true
       this.submitForm().then(_ => {
         this.$message({
           type: 'success',
           message: '保存成功'
         })
+        this.$router.go(-1)
       }).catch(e => {
         this.$message({
           type: 'error',
@@ -293,21 +287,24 @@ export default {
       })
     },
     submitForm() {
+      return Promise.all(this.envList.map(env => this.getEnvRequest(env)))
+    },
+    getEnvRequest(env) {
       const getEnvData = (envData) => {
         return envData[0].envs
       }
-      if (this.activeEnv.id === '_default') {
+      if (env.id === '_default') {
         return addProjectEnv({
-          name: this.activeEnv.name,
+          name: env.name,
           project: this.projectId,
-          envcontent: getEnvData(this.activeEnv.envData)
+          envcontent: getEnvData(env.envData)
         })
       } else {
         return updateProjectEnv({
-          id: this.activeEnv.id
+          id: env.id
         }, {
           project: this.projectId,
-          envcontent: getEnvData(this.activeEnv.envData)
+          envcontent: getEnvData(env.envData)
         })
       }
     }

@@ -14,14 +14,6 @@
           <el-option label="流程" :value="2" />
         </el-select>
       </el-form-item>
-      <el-form-item label="运行状态" :disabled="isStaticData('status')">
-        <el-select v-model="form.status">
-          <el-option label="全部" value="" />
-          <el-option label="未运行" :value="1" />
-          <el-option label="运行中" :value="2" />
-          <el-option label="运行完成" :value="3" />
-        </el-select>
-      </el-form-item>
     </el-form>
     <span slot="footer" class="dialog-footer">
       <el-button @click="handleCancel">取 消</el-button>

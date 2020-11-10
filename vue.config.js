@@ -42,7 +42,7 @@ module.exports = {
       [process.env.VUE_APP_BASE_API]: {
         // target: `http://www.jianghuajun.com:8080`,
         // target: `http://47.103.26.195:8080`,
-        target: `http://192.168.17.19:8080`,
+        target: process.env.VUE_APP_DEV_SERVER,
         changeOrigin: true,
         pathRewrite: {
           ['^' + process.env.VUE_APP_BASE_API]: ''

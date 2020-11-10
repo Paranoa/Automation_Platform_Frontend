@@ -7,7 +7,7 @@ const state = {
   token: getToken(),
   refreshToken: getRefreshToken(),
   name: '',
-  userInfo: '',
+  userInfo: null,
   avatar: '',
   allUsers: [],
   allProjects: [],

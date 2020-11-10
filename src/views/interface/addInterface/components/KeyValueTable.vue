@@ -1,7 +1,7 @@
 <template>
   <ul class="key-value-table-container">
     <li v-for="(item, index) of keyValueList" :key="index">
-      <el-row v-if="type==='file'">
+      <el-row v-if="type==='file'" v-loading="item.loading">
         <el-col :span="4">
           <el-input :ref="`input-key-${index}`" v-model="item.key" size="mini" />
         </el-col>
@@ -12,18 +12,18 @@
           </el-select>
         </el-col>
         <el-col :span="17" class="col-padding">
-          <el-input v-show="!item.valueType || item.valueType === 'text'" :ref="`input-value-${index}`" v-model="item.textValue" size="mini" />
+          <el-input v-show="!item.valueType || item.valueType === 'text'" :ref="`input-value-${index}`" v-model="item.value" size="mini" />
           <div v-show="item.valueType === 'file'">
             <FileUpload :ref="`upload-${index}`" v-model="item.files" action="/" />
           </div>
           <span
             class="button-delete"
-            @click="keyValueList.length > 1 && keyValueList.splice(index, 1)"
+            @click="handleDelete(index)"
           >x
           </span>
         </el-col>
       </el-row>
-      <el-row v-else>
+      <el-row v-else v-loading="item.loading">
         <el-col :span="4">
           <el-input :ref="`input-key-${index}`" v-model="item.key" size="mini" />
         </el-col>
@@ -34,14 +34,25 @@
           <el-input :ref="`input-desc-${index}`" v-model="item.desc" size="mini" />
           <span
             class="button-delete"
-            @click="keyValueList.length > 1 && keyValueList.splice(index, 1)"
+            @click="handleDelete(index)"
           >x
           </span>
         </el-col>
       </el-row>
     </li>
     <li class="table-item-add">
-      <el-row>
+      <el-row v-if="type==='file'">
+        <el-col :span="4">
+          <el-input size="mini" @click.native="addItem('key')" />
+        </el-col>
+        <el-col :span="3">
+          <el-input size="mini" @click.native="addItem('key')" />
+        </el-col>
+        <el-col :span="17">
+          <el-input size="mini" @click.native="addItem('desc')" />
+        </el-col>
+      </el-row>
+      <el-row v-else>
         <el-col :span="4">
           <el-input size="mini" @click.native="addItem('key')" />
         </el-col>
@@ -64,13 +75,20 @@ export default {
   props: {
     type: {
       type: String,
-      default: ''
+      validator: function(value) {
+        return ['text', 'file'].indexOf(value) !== -1
+      },
+      default: 'text'
     },
     keyValueList: {
       type: Array,
       default() {
         return [{}]
       }
+    },
+    onDelete: {
+      type: Function,
+      default: () => {}
     }
   },
   methods: {
@@ -78,17 +96,22 @@ export default {
       this.keyValueList.push({})
       this.focusLastItem(focusType)
     },
+    handleDelete(index) {
+      const item = this.keyValueList[index]
+      const handler = this.onDelete(item, this.keyValueList, index)
+      if (handler instanceof Promise) {
+        handler.then(_ => {
+          this.keyValueList.splice(index, 1)
+        }).catch(_ => {})
+      } else if (handler !== false) {
+        this.keyValueList.splice(index, 1)
+      }
+    },
     focusLastItem(focusType) {
       // 等待dom更新后focus最后一行
       this.$nextTick(() => {
         const index = this.keyValueList.length - 1
-        if (focusType === 'key') {
-          this.$refs[`input-key-${index}`][0].focus()
-        } else if (focusType === 'value') {
-          this.$refs[`input-value-${index}`][0].focus()
-        } else if (focusType === 'desc') {
-          this.$refs[`input-value-${index}`][0].focus()
-        }
+        this.$refs[`input-${focusType}-${index}`][0].focus()
       })
     }
   }

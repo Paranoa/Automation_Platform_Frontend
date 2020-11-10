@@ -111,10 +111,43 @@ export function param2Obj(url) {
  * @param {Aray} filterProps
  * @returns {Object}
  */
-export function filterProp(obj, columns) {
+export function filterProp(obj, columns, exclude) {
   const result = {}
-  columns.forEach(key => {
-    key in obj && (result[key] = obj[key])
-  })
+  if (exclude && Array.isArray(exclude)) {
+    Object.keys(obj).forEach(key => {
+      if (!exclude.includes(key)) {
+        result[key] = obj[key]
+      }
+    })
+  } else {
+    columns.forEach(key => {
+      key in obj && (result[key] = obj[key])
+    })
+  }
   return result
+}
+
+export function debounce(func, delay, ctx) {
+  let flag
+  return function() {
+    if (!flag) {
+      func.call(ctx, ...arguments)
+      flag = true
+      setTimeout(_ => {
+        flag = false
+      }, delay)
+    }
+  }
+}
+
+export function throttle(func, delay, ctx) {
+  let timer
+  return function() {
+    if (timer) {
+      clearTimeout(timer)
+    }
+    timer = setTimeout(_ => {
+      func.call(ctx, ...arguments)
+    }, delay)
+  }
 }

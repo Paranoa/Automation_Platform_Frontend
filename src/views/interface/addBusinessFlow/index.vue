@@ -34,7 +34,7 @@
         </span>
       </div>
       <Draggable
-        v-if="selectedFlow.length"
+        v-show="selectedFlow.length"
         v-model="selectedFlow"
         class="list-group"
         tag="ul"
@@ -45,7 +45,7 @@
         <transition-group type="transition" :name="!drag ? 'flip-list' : null">
           <li
             v-for="(item, index) of selectedFlow"
-            :key="`${index}_${item.id}`"
+            :key="item.id? item.id : index"
             class="list-group-item"
           >
             <div class="list-group-item-main">
@@ -103,7 +103,7 @@
           </li>
         </transition-group>
       </Draggable>
-      <div v-else class="list-group__empty">
+      <div v-show="!selectedFlow.length" class="list-group__empty">
         --- 请选择接口 ---
       </div>
       <span slot="footer" class="dialog-footer">
@@ -163,7 +163,6 @@
       <EditInterfaceParams
         v-if="currFlow"
         is-edit-params
-        :needs-diff-data="Boolean(currFlow.id)"
         :default-interface="currFlow.interface"
         @submit="handleEditParamsSubmit"
         @close="_ => editParamsVisible = false"
@@ -183,7 +182,7 @@ import { filterProp } from '@/utils'
 // 单步流程对象(flow)自身属性的字段
 const FLOW_DATA_COLUMN = ['id', 'interface', 'flow', 'name', 'step']
 // 单步流程对象(flow)中 接口可修改的Param字段
-const PARAMS_DATA_COLUMN = ['params', 'headerparams', 'bodyparams', 'preprocessing', 'postprocessing', 'assertion', 'bodyformat', 'bodymessageformat']
+const PARAMS_DATA_COLUMN = ['params', 'headerparams', 'bodyparams', 'preprocessing', 'postprocessing', 'assertion', 'bodyformat', 'bodymessageformat', 'variable']
 
 export default {
   components: {
@@ -245,7 +244,7 @@ export default {
       next()
     }
   },
-  created() {
+  mounted() {
     if (this.isEdit) {
       this.isLoading = true
       getAccessories({
@@ -256,18 +255,22 @@ export default {
           name,
           desc
         }
-        this.selectedFlow = res.data.map(obj => {
+        this.selectedFlow.push(...res.data.map(obj => {
           const flowObj = filterProp(obj, FLOW_DATA_COLUMN)
           const interfaceParamObj = filterProp(obj, PARAMS_DATA_COLUMN)
+          const originParams = this.getOriginParams(interfaceParamObj)
+          const form_data = obj.form_data || {}
           return {
             ...flowObj,
             name: obj.name,
             interface: {
               ...obj.interface_detail,
-              ...interfaceParamObj
-            }
+              ...interfaceParamObj,
+              form_data
+            },
+            originParams
           }
-        })
+        }))
       }).finally(_ => { this.isLoading = false })
     }
   },
@@ -317,18 +320,43 @@ export default {
                 type: 'success'
               })
               this.$router.go(-1)
-            }).catch(e => {
+            })
+            .catch(e => {
               this.$message({
                 message: e.message,
                 type: 'error'
               })
-            }).finally(_ => {
+            })
+            .finally(_ => {
               this.isLoading = false
             })
         }
       })
     },
     handleExport() {
+    },
+    getOriginParams(data) {
+      const result = {}
+      PARAMS_DATA_COLUMN.forEach(key => {
+        result[key] = data[key]
+      })
+      return result
+    },
+    getDiffData(originData, formData) {
+      // 只将有变化的数据提交
+      const result = {}
+      const isChange = (a, b) => JSON.stringify(a) !== JSON.stringify(b)
+      Object.keys(originData).forEach(key => {
+        // body为form-data时 diff特殊处理
+        if (key === 'bodyparams' && formData.bodyformat === 1) {
+          return
+        } else if (isChange(formData[key], originData[key])) {
+          result[key] = formData[key]
+        }
+      })
+      console.log('diffing: ', originData, formData)
+      console.log('diff Result: ', result)
+      return result
     },
     editOriginInterface(interfaceObj) {
       this.$router.push({
@@ -345,7 +373,12 @@ export default {
     },
     handleEditParamsSubmit(formData) {
       const paramsData = this.filterParamsData(formData)
-      this.currFlow.paramsData = paramsData
+      console.log(paramsData)
+      if (this.isEdit) {
+        this.currFlow.paramsData = this.getDiffData(this.currFlow.originParams, paramsData)
+      } else {
+        this.currFlow.paramsData = paramsData
+      }
       // 更新接口数据中的paramsData
       this.currFlow.interface = {
         ...this.currFlow.interface,
@@ -361,6 +394,9 @@ export default {
     },
     chooseInterface() {
       this.interfaceVisible = true
+      if (this.$refs.interfaceList) {
+        this.$refs.interfaceList.clearSelection()
+      }
     },
     expandAll() {
       this.selectedFlow.forEach(item => {

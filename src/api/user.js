@@ -45,3 +45,9 @@ export function refreshToken() {
   })
 }
 
+export function getExecutor() {
+  return request({
+    url: '/interfacemanagement/actuator/',
+    method: 'get'
+  })
+}

@@ -182,25 +182,16 @@ export const constantRoutes = [
         }
       },
       {
-        path: 'excute',
-        name: 'InterfaceExcute',
+        path: 'execute/:interfaceId',
+        name: 'InterfaceExecute',
         component: () => import('@/views/interface/interfaceList/runInterface'),
         meta: { title: '运行-环境选择', activeMenu: '/interface/index' },
-        hidden: true,
-        beforeEnter: (to, from, next) => {
-          if (to.params.interfaceObj) {
-            next()
-          } else {
-            next({
-              name: 'Interface'
-            })
-          }
-        }
+        hidden: true
       },
       {
-        path: 'excuteResult/:id',
-        name: 'InterfaceExcuteResult',
-        component: () => import('@/views/interface/interfaceList/excutionResult'),
+        path: 'executeResult/:id',
+        name: 'InterfaceExecuteResult',
+        component: () => import('@/views/interface/interfaceList/executionResult'),
         meta: { title: '测试结果-单接口', activeMenu: '/interface/index' },
         hidden: true
       }

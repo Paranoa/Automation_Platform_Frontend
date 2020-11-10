@@ -37,7 +37,7 @@
       </el-form-item>
     </el-form>
     <span slot="footer" class="dialog-footer">
-      <div class="app-btn app-btn-blue" type="primary" @click="handleConfirm">保 存</div>
+      <div v-loading="isSubmiting" class="app-btn app-btn-blue" type="primary" @click="handleConfirm">保 存</div>
       <div class="app-btn app-btn-white" @click="handleCancel">返 回</div>
     </span>
   </div>
@@ -59,7 +59,8 @@ export default {
       projectFormRules: projectFormRules(this),
       allUsers: this.$store.getters.allUsers,
       form: {
-      }
+      },
+      isSubmiting: false
     }
   },
   computed: {
@@ -94,6 +95,7 @@ export default {
       this.$router.go(-1)
     },
     handleConfirm() {
+      if (this.isSubmiting) return
       this.$refs.projectForm.validate(valid => {
         if (!valid) {
           return
@@ -106,19 +108,21 @@ export default {
         }
         if (this.isEdit) {
           const diffData = this.getDiffData(formData)
-          if (diffData) {
-            updateProject({
-              ...diffData,
-              id: this.project.id
-            }).then(res => {
-              this.$message({
-                type: 'success',
-                message: '更新成功'
-              })
-              this.$router.go(-1)
+          this.isSubmiting = true
+          updateProject({
+            ...diffData,
+            id: this.project.id
+          }).then(res => {
+            this.$message({
+              type: 'success',
+              message: '更新成功'
             })
-          }
+            this.$router.go(-1)
+          }).finally(_ => {
+            this.isSubmiting = false
+          })
         } else {
+          this.isSubmiting = true
           addProject(formData).then(res => {
             this.$message({
               type: 'success',
@@ -126,6 +130,8 @@ export default {
             })
             this.$router.go(-1)
             this.$store.dispatch('user/getAllProjects')
+          }).finally(_ => {
+            this.isSubmiting = false
           })
         }
       })

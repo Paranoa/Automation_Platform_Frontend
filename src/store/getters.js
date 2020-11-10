@@ -7,9 +7,9 @@ const getters = {
   userInfo: state => state.user.userInfo,
   allUsers: state => state.user.allUsers,
   allProjects: state => state.user.allProjects,
-  hasGetUserInfo: state => state.user.allUsers.length,
   selectedProjectId: state => state.user.selectedProjectId,
   selectedProject: state => state.user.allProjects.find(p => p.id === state.user.selectedProjectId),
-  lastInterfacePageState: state => state.app.lastInterfacePageState
+  lastInterfacePageState: state => state.app.lastInterfacePageState,
+  executors: state => state.user.executors
 }
 export default getters
